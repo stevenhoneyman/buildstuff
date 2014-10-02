@@ -134,7 +134,7 @@ function get_source() {
 	git clone --single-branch --depth=${_gitdepth} $url "${_tmp}/${1}-src" &
 }
 
-for src in musl musl-kernel-headers busybox acl attr bash coreutils cryptsetup cv dash diffutils dropbear e2fsprogs ethtool file findutils gawk gzip hexedit htop icoutils iptables kmod libnl-tiny libpng make mksh multitail nasm ncurses openssl patch pkgconf readline screen sed sstrip strace tar tcc util-linux wget yasm bc cpuid distcc nano netcat pax-utils popt zlib; do
+for src in musl musl-kernel-headers busybox acl attr bash bc coreutils cpuid cryptsetup cv dash diffutils distcc dropbear e2fsprogs ethtool file findutils gawk gzip hexedit htop icoutils iptables kmod libnl-tiny libpng make mksh multitail nano nasm ncurses netcat openssl patch pax-utils pkgconf popt readline screen sed sstrip strace tar tcc tree util-linux wget yasm zlib ; do
 	if [ -d "$_gitdir/$src" ]; then
 		msg3 "Updating $_gitdir/$src"; cd "$_gitdir/$src" && git pull
 		msg6 "Copying $src source"; cp -r "$_gitdir/$src" "$_tmp/${src}-src"
