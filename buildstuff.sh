@@ -63,10 +63,13 @@ function get_source() {
 	musl) 		url="git://git.musl-libc.org/musl" ;;
 	busybox)	url="git://git.busybox.net/busybox" ;;
 	*-headers)	url="git://github.com/sabotage-linux/kernel-headers.git" ;;
+	make)		url="git://git.sv.gnu.org/make.git" ;;
 	pkgconf)	url="git://github.com/pkgconf/pkgconf.git" ;;
 	zlib)		url="git://github.com/madler/zlib.git" ;;
 
+	## there's always a few awkward ones...
 	ncurses)	wget -nv ftp://invisible-island.net/ncurses/current/${_ncurses:-ncurses.tar.gz} -O - | tar zxf - -C "$_tmp" && mv "$_tmp"/${1}-* "$_tmp"/${1}-src ;;
+	popt) 		(cd "$_tmp" && cvs -qd :pserver:anonymous@rpm5.org:/cvs co -d popt-src popt) ;;
 
 	*) echo "$1 is not a recognized source name" ;;
   esac
@@ -75,7 +78,7 @@ function get_source() {
 	git clone --single-branch $url "${_tmp}/${1}-src"
 }
 
-for src in musl musl-kernel-headers busybox; do
+for src in musl musl-kernel-headers busybox make ncurses pkgconf popt zlib; do
 	if [ -d "$_gitdir/$src" ]; then
 		msg3 "Updating $_gitdir/$src"; cd "$_gitdir/$src" && git pull
 		msg6 "Copying $src source"; cp -r "$_gitdir/$src" "$_tmp/${src}-src"
@@ -152,3 +155,21 @@ for b in minigzip{,64} contrib/minizip/mini{unz,zip} contrib/untgz/untgz; do
 done
 echo "zlib $(git describe --tags|tr '-' ' ')" >>"$_pfx/version"
 ### zlib */
+
+### /* popt
+cd "$_tmp/popt-src"
+./autogen.sh
+CFLAGS="$CFLAGS -fPIC" ./configure --prefix=${_pfx} --disable-{nls,doxygen,shared}
+make && make install-strip
+awk '/PACKAGE_VERSION/ {gsub(/"/,"",$3); print "popt "$3}' config.h >>"$_pfx/version"
+### popt */
+
+### /* make
+cd "$_tmp/make-src"
+sed -i '/^SUBDIRS/s/doc//' Makefile.am
+autoreconf -fi
+./configure --prefix=${_pfx} --sysconfdir=/etc \
+	--disable-nls --disable-rpath --without-guile
+make && strip -s make && cp make "$_pfx/bin/"
+git_pkg_ver "make" >>"$_pfx/version"
+### make */
