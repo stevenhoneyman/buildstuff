@@ -43,6 +43,20 @@ function msg5() { echo -e "\e[95m==> $@\e[0m"; } # magenta
 function msg6() { echo -e "\e[96m==> $@\e[0m"; } # cyan
 function msg7() { echo -e "\e[97m==> $@\e[0m"; } # white
 
+function git_pkg_ver() {
+	[[ -f "config.h" ]] && cf="config.h"
+	[[ -f "include/config.h" ]] && cf="include/config.h"
+	[[ -f "lib/config.h" ]] && cf="lib/config.h"
+	[[ ! -z "$2" ]] && cf="$2"
+
+	[[ -f "$cf" ]] && echo $(awk '/PACKAGE_VERSION/ {gsub(/"/,"",$3); print "'$1' "$3}' $cf)-$(git log -1 --format=%cd.%h --date=short|tr -d -)
+}
+
+function cc_wget() {
+	[[ $# -lt 2 ]] && return
+	wget -nv "$1" -O - | $CC $CFLAGS $LDFLAGS -x c - -s -o "$2"
+}
+
 function get_source() {
   local url="no"
   case $1 in
@@ -108,6 +122,7 @@ cd "$_tmp/pkgconf-src"
 ./configure --prefix=${_pfx} CFLAGS="${CFLAGS/-D_GNU_SOURCE/}"
 make && make check && make install && strip -s ${_pfx}/bin/pkgconf || exit 3
 ln -s "$_pfx"/bin/pkgconf "$_pfx/bin/pkg-config"
+git_pkg_ver "pkgconf" >>"$_pfx/version"
 export PKG_CONFIG="$_pfx/bin/pkg-config"
 ### pkgconf */
 
