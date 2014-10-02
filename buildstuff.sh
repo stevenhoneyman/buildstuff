@@ -171,6 +171,7 @@ awk '/PACKAGE_VERSION/ {gsub(/"/,"",$3); print "popt "$3}' config.h >>"$_pfx/ver
 cd "$_tmp/make-src"
 sed -i '/^SUBDIRS/s/doc//' Makefile.am
 autoreconf -fi
+patch -p1 -i ${_breqs}/make4-git_bug23273.patch
 ./configure --prefix=${_pfx} --sysconfdir=/etc \
 	--disable-nls --disable-rpath --without-guile
 make && strip -s make && cp make "$_pfx/bin/"
