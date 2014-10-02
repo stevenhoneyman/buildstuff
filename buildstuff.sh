@@ -299,7 +299,40 @@ ${CC} ${CFLAGS} -s *.c -lncursesw ${LDFLAGS} -o "${_pfx}"/bin/cv
 echo $(awk '/VERSION/ {gsub(/"/,"",$3); print "'cv' "$3}' cv.h)-$(git log -1 --format=%cd.%h --date=short|tr -d -) >>"$_pfx/version"
 ### cv */
 
+### /* attr
+cd "$_tmp/attr-src"
+./autogen.sh
+CFLAGS="$CFLAGS -fPIC" ./configure --prefix=${_pfx} --disable-{nls,rpath,shared,debug}
+make && make install-binPROGRAMS install-pkgconfDATA install-pkgincludeHEADERS
+git_pkg_ver "attr" >>"$_pfx/version"
+### attr */
 
+### /* acl			#+# attr before this
+cd "$_tmp/acl-src"
+./autogen.sh
+CFLAGS="$CFLAGS -fPIC" ./configure --prefix=${_pfx} --disable-{nls,rpath,shared,debug}
+make && make install-binPROGRAMS install-pkgconfDATA install-pkgincludeHEADERS install-sysincludeHEADERS
+git_pkg_ver "acl" >>"$_pfx/version"
+### acl */
+
+# TODO: check include/sys/acl.h, include/attr/xattr.h exist before starting
+### /* coreutils		#+# acl, attr before this
+cd "$_tmp/coreutils-src"
+./bootstrap --skip-po
+## Werror breaks compile
+sed -i '/as_fn_append CFLAGS.*Werror/d' configure
+## visual tweaks
+sed -i 's|online help: <%s>\(.n.., PACKAGE_NAME, PACKAGE_\)URL|%s\1VERSION|' src/system.h
+sed -i '/redundant message/,/program . . invocation/d' src/system.h
+./configure --prefix=${_pfx} --sysconfdir=/etc --disable-{nls,rpath,assert} \
+	--enable-{acl,xattr} --without-gmp --enable-no-install-program=stdbuf
+make && make install-strip
+## let's have the multicall binary as well
+./configure --prefix=${_pfx} --sysconfdir=/etc --disable-{nls,rpath,assert} \
+	--enable-{acl,xattr} --without-gmp --enable-no-install-program=stdbuf --enable-single-binary=symlinks
+make && strip -s src/coreutils && cp -v src/coreutils "$_pfx/bin/"
+git_pkg_ver "coreutils" | cut -f1,2,3 -d. >>"$_pfx/version"
+### coreutils */
 
 
 
