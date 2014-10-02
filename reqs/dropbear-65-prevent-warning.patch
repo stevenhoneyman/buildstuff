@@ -1,0 +1,12 @@
+--- a/svr-runopts.c	2014-09-25 00:29:26.915457781 +0100
++++ b/svr-runopts.c	2014-09-25 00:25:08.175453942 +0100
+@@ -410,6 +410,9 @@
+ 	sign_key * read_key = new_sign_key();
+ 	enum signkey_type type = DROPBEAR_SIGNKEY_ANY;
+ 	if (readhostkey(keyfile, read_key, &type) == DROPBEAR_FAILURE) {
++#ifdef DROPBEAR_DELAY_HOSTKEY
++		if (!svr_opts.delay_hostkey)
++#endif
+ 		dropbear_log(LOG_WARNING, "Failed loading %s", keyfile);
+ 	}
+ 
