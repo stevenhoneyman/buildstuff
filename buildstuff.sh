@@ -20,12 +20,17 @@ export _bbext=$HOME/bbext
 ## temp dir for compiling
 export _tmp=$(mktemp -d)
 
+## clone depth for stuff you don't have already.
+## the lower the number, the more chance of a version generator problem.
+## set to 1 if you don't care, or have a crap internet connection
+export _gitdepth=100
+
 ## comment this line out to use latest (or uncomment to use specific snapshot)
 #export _ncurses='ncurses-5.9-20140927.tgz'
 
 unset CC CXX CFLAGS CPPFLAGS CXXFLAGS LDFLAGS
 export CXX=/bin/false
-export CFLAGS='-s -Os -march=x86-64 -mtune=generic -pipe -D_GNU_SOURCE'
+export CFLAGS='-s -Os -march=x86-64 -mtune=generic -pipe -fno-strict-aliasing -fomit-frame-pointer -falign-functions=1 -falign-jumps=1 -falign-labels=1 -falign-loops=1 -fno-asynchronous-unwind-tables -fno-unwind-tables -fvisibility=hidden -D_GNU_SOURCE'
 
 #######################
 
@@ -78,7 +83,7 @@ function get_source() {
   esac
 
   [ $url != "no" ] && \
-	git clone --single-branch $url "${_tmp}/${1}-src"
+	git clone --single-branch --depth=${_gitdepth} $url "${_tmp}/${1}-src" &
 }
 
 for src in musl musl-kernel-headers busybox make ncurses pkgconf popt zlib htop nano dropbear ; do
