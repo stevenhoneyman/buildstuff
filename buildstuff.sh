@@ -111,7 +111,7 @@ function get_source() {
 #	yasm)		url="git://github.com/yasm/yasm.git" ;;
 	zlib)		url="git://github.com/madler/zlib.git" ;;
 
-	# there's always a few awkward ones...
+	## there's always a few awkward ones...
 #	bc) 		wget -nv ftp://alpha.gnu.org/gnu/bc/bc-1.06.95.tar.bz2 -O-|tar jxf - -C "$_tmp" && mv "$_tmp"/${1}-* "$_tmp"/${1}-src ;;
 #	cpuid) 		wget -nv http://etallen.com/${1}/$(wget -qO- "http://etallen.com/$1/?C=M;O=D;F=1;P=$1*src*"|grep -om1 "$1.*gz") -O-|tar zxf - -C "$_tmp" && mv "$_tmp"/${1}-* "$_tmp"/${1}-src ;;
 #	distcc) 	svn co -q http://distcc.googlecode.com/svn/trunk/ "$_tmp/distcc-src" ;;
@@ -121,6 +121,10 @@ function get_source() {
 #	netcat) 	svn co -q svn://svn.code.sf.net/p/netcat/code/trunk "$_tmp/netcat-src" ;;
 #	pax-utils) 	(cd "$_tmp" && cvs -qd :pserver:anonymous@anoncvs.gentoo.org:/var/cvsroot co -d ${1}-src gentoo-projects/${1}) ;;
 	popt) 		(cd "$_tmp" && cvs -qd :pserver:anonymous@rpm5.org:/cvs co -d popt-src popt) ;;
+
+	## and then there's this! wtf? also, requiring unzip, to unzip unzip is stupid.
+#	unzip)	(wget http://antinode.info/ftp/info-zip/$(wget -qO- 'http://antinode.info/ftp/info-zip/?C=M;O=D;P=unzip*.zip'|grep -o 'unzip[0-9a-zA-Z_.-]*\.zip'|head -n1) -O "$_tmp/unzip.zip"
+#				unzip "$_tmp"/unzip.zip -d "$_tmp" && rm "$_tmp/unzip.zip" && mv "$_tmp"/unzip* "$_tmp"/unzip-src ) & ;;
 
 	*) url="no" ;;
   esac
