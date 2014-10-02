@@ -69,10 +69,10 @@ function get_source() {
 	busybox)	url="git://git.busybox.net/busybox" ;;
 	*-headers)	url="git://github.com/sabotage-linux/kernel-headers.git" ;;
 
-#	acl)		url="git://git.sv.gnu.org/acl.git" ;;
-#	attr)		url="git://git.sv.gnu.org/attr.git" ;;
+	acl)		url="git://git.sv.gnu.org/acl.git" ;;
+	attr)		url="git://git.sv.gnu.org/attr.git" ;;
 #	bash)		url="git://git.sv.gnu.org/bash.git" ;;
-#	coreutils)	url="git://git.sv.gnu.org/coreutils.git" ;;
+	coreutils)	url="git://git.sv.gnu.org/coreutils.git" ;;
 #	cryptsetup)	url="git://git.kernel.org/pub/scm/utils/cryptsetup/cryptsetup.git" ;;
 	cv)		url="git://github.com/Xfennec/cv.git" ;;
 #	dash)		url="git://git.kernel.org/pub/scm/utils/dash/dash.git" ;;
@@ -106,7 +106,7 @@ function get_source() {
 	strace)		url="git://git.code.sf.net/p/strace/code" ;;
 #	tar)		url="git://git.sv.gnu.org/tar.git" ;;
 #	tcc)		url="git://repo.or.cz/tinycc.git" ;;
-#	util-linux)	url="git://git.kernel.org/pub/scm/utils/util-linux/util-linux.git" ;;
+	util-linux)	url="git://git.kernel.org/pub/scm/utils/util-linux/util-linux.git" ;;
 #	wget)		url="git://git.sv.gnu.org/wget.git" ;;
 #	yasm)		url="git://github.com/yasm/yasm.git" ;;
 	zlib)		url="git://github.com/madler/zlib.git" ;;
