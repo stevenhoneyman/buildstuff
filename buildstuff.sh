@@ -63,12 +63,15 @@ function get_source() {
 	musl) 		url="git://git.musl-libc.org/musl" ;;
 	busybox)	url="git://git.busybox.net/busybox" ;;
 	*-headers)	url="git://github.com/sabotage-linux/kernel-headers.git" ;;
+	dropbear)	url="git://github.com/mkj/dropbear.git" ;;
+	htop)		url="git://github.com/hishamhm/htop.git" ;;
 	make)		url="git://git.sv.gnu.org/make.git" ;;
 	pkgconf)	url="git://github.com/pkgconf/pkgconf.git" ;;
 	zlib)		url="git://github.com/madler/zlib.git" ;;
 
 	## there's always a few awkward ones...
 	ncurses)	wget -nv ftp://invisible-island.net/ncurses/current/${_ncurses:-ncurses.tar.gz} -O - | tar zxf - -C "$_tmp" && mv "$_tmp"/${1}-* "$_tmp"/${1}-src ;;
+	nano) 		svn co -q svn://svn.savannah.gnu.org/nano/trunk/nano "$_tmp/nano-src" ;;
 	popt) 		(cd "$_tmp" && cvs -qd :pserver:anonymous@rpm5.org:/cvs co -d popt-src popt) ;;
 
 	*) echo "$1 is not a recognized source name" ;;
@@ -78,7 +81,7 @@ function get_source() {
 	git clone --single-branch $url "${_tmp}/${1}-src"
 }
 
-for src in musl musl-kernel-headers busybox make ncurses pkgconf popt zlib; do
+for src in musl musl-kernel-headers busybox make ncurses pkgconf popt zlib htop nano dropbear ; do
 	if [ -d "$_gitdir/$src" ]; then
 		msg3 "Updating $_gitdir/$src"; cd "$_gitdir/$src" && git pull
 		msg6 "Copying $src source"; cp -r "$_gitdir/$src" "$_tmp/${src}-src"
@@ -173,3 +176,43 @@ autoreconf -fi
 make && strip -s make && cp make "$_pfx/bin/"
 git_pkg_ver "make" >>"$_pfx/version"
 ### make */
+
+### /* htop
+cd "$_tmp/htop-src"
+./autogen.sh
+./configure --prefix=${_pfx} --sysconfdir=/etc
+make && strip -s htop && cp htop "$_pfx/bin/"
+git_pkg_ver "htop" >>"$_pfx/version"
+### htop */
+
+### /* nano
+cd "$_tmp/nano-src"
+./autogen.sh
+./configure --prefix=${_pfx} --sysconfdir=/etc --datarootdir=/usr/share \
+	--disable-{nls,extra,speller,browser,mouse,wrapping} \
+	--disable-{multibuffer,tabcomp,justify,operatingdir} \
+	--enable-{color,nanorc,utf8}
+make && strip -s src/nano && cp src/nano "$_pfx/bin/"
+awk '/PACKAGE_VERSION/ {gsub(/"/,"",$3); print "nano "$3"'$(svnversion)'"}' config.h >>"$_pfx/version"
+### nano */
+
+### /* dropbear 			*** 272kb with zlib, 227kb without ***
+cd "$_tmp/dropbear-src"
+patch -p1 -i ${_breqs}/dropbear-65-prevent-warning.patch
+autoreconf -fi
+./configure --prefix=${_pfx} --sysconfdir=/etc --datarootdir=/usr/share --sbindir=/usr/bin \
+	--disable-{lastlog,utmp,utmpx,wtmp,wtmpx,pututline,pututxline,pam} --disable-zlib
+sed -e '/#define INETD_MODE/d'      	\
+    -e '/#define DROPBEAR_BLOWFISH/d' 	\
+    -e '/#define DROPBEAR_ECDH/d'   	\
+    -e '/#define DROPBEAR_ECDSA/d'  	\
+    -e '/#define DROPBEAR_MD5_HMAC/d' 	\
+    -e '/#define DROPBEAR_TWOFISH/d' 	\
+    -e '/#define SFTPSERVER_PATH/d' 	\
+    -e '/DEFAULT_KEEPALIVE/s/0/30/'     -i options.h
+sed -i 's|-dropbear_" DROPBEAR_VERSION|"|' sysoptions.h
+make PROGRAMS="dropbear dropbearkey dbclient" MULTI=1
+strip -s dropbearmulti && cp -v dropbearmulti "$_pfx/bin/"
+for p in dropbear dropbearkey dbclient ssh; do ln -s dropbearmulti "$_pfx/bin/$p"; done
+echo "dropbear $(awk '/define DROPBEAR_VERSION/ {gsub(/"/,"",$3); print $3}' sysoptions.h)-$(git log -1 --format=%cd.%h --date=short|tr -d -)" >>"$_pfx/version"
+### dropbear */
