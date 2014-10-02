@@ -74,7 +74,7 @@ function get_source() {
 #	bash)		url="git://git.sv.gnu.org/bash.git" ;;
 #	coreutils)	url="git://git.sv.gnu.org/coreutils.git" ;;
 #	cryptsetup)	url="git://git.kernel.org/pub/scm/utils/cryptsetup/cryptsetup.git" ;;
-#	cv)		url="git://github.com/Xfennec/cv.git" ;;
+	cv)		url="git://github.com/Xfennec/cv.git" ;;
 #	dash)		url="git://git.kernel.org/pub/scm/utils/dash/dash.git" ;;
 #	diffutils)	url="git://git.sv.gnu.org/diffutils.git" ;;
 	dropbear)	url="git://github.com/mkj/dropbear.git" ;;
@@ -94,7 +94,7 @@ function get_source() {
 #	libpng)		url="git://git.code.sf.net/p/libpng/code" ;;
 	make)		url="git://git.sv.gnu.org/make.git" ;;
 #	mksh)		url="git://github.com/MirBSD/mksh.git" ;;
-#	multitail)	url="git://github.com/flok99/multitail.git" ;;
+	multitail)	url="git://github.com/flok99/multitail.git" ;;
 #	nasm)		url="git://repo.or.cz/nasm.git" ;;
 #	openssl)	url="git://git.openssl.org/openssl.git" ;;
 #	patch)		url="git://git.sv.gnu.org/patch.git" ;;
@@ -273,6 +273,32 @@ echo "dropbear $(awk '/define DROPBEAR_VERSION/ {gsub(/"/,"",$3); print $3}' sys
 cc_wget 'https://vim.googlecode.com/hg/src/xxd/xxd.c' "${_pfx}/bin/xxd"
 echo "xxd 1.10" >>"$_pfx/version"
 ### xxd */
+
+### /* strace
+cd "$_tmp/strace-src"
+./bootstrap
+./configure --prefix=${_pfx}
+make && strip -s src/strace && cp -v src/strace "$_pfx/bin/"
+git_pkg_ver "strace" >>"$_pfx/version"
+### strace */
+
+### /* multitail
+cd "$_tmp/multitail-src"
+_MT_VER="$(sed 's/VERSION=//' version)-$(git log -1 --format=%cd.%h --date=short|tr -d -)"
+sed -i '/ts...mt_started/d; /show_f1 =/d; s/if (show_f1)/if (0)/g' mt.c
+${CC} ${CFLAGS} -s *.c -lpanelw -lncursesw -lm -lutil ${LDFLAGS} -o multitail -DUTF8_SUPPORT=yes -DCONFIG_FILE=\"/etc/multitail.conf\" -DVERSION=\"${_MT_VER}\"
+install -Dm755 multitail      "${_pfx}/bin/multitail"
+install -Dm644 multitail.conf "${_pfx}/etc/multitail.conf"
+install -Dm644 multitail.1    "${_pfx}/share/man/man1/multitail.1"
+echo "multitail ${_MT_VER}" >>"$_pfx/version"
+### multitail */
+
+### /* cv
+cd "$_tmp/cv-src"
+${CC} ${CFLAGS} -s *.c -lncursesw ${LDFLAGS} -o "${_pfx}"/bin/cv
+echo $(awk '/VERSION/ {gsub(/"/,"",$3); print "'cv' "$3}' cv.h)-$(git log -1 --format=%cd.%h --date=short|tr -d -) >>"$_pfx/version"
+### cv */
+
 
 
 
