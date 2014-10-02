@@ -283,7 +283,7 @@ echo "xxd 1.10" >>"$_pfx/version"
 cd "$_tmp/strace-src"
 ./bootstrap
 ./configure --prefix=${_pfx}
-make && strip -s src/strace && cp -v src/strace "$_pfx/bin/"
+make && strip -s strace && cp -v strace "$_pfx/bin/"
 git_pkg_ver "strace" >>"$_pfx/version"
 ### strace */
 
@@ -356,7 +356,7 @@ for mp in $(find *utils -name *.1 -o -name *.8|sed 's%schedutils/ionice.1%%'); d
 done
 mv sw8 sys-utils/swapoff.8
 ### / ###
-./configure --prefix=${_pfx} --without-{python,user,udev,systemd} --disable-{rpath,nls,makeinstall-chown} \
+./configure --prefix=${_pfx} --without-{python,user,udev,systemd} --disable-{rpath,nls,makeinstall-chown,shared} \
 	--disable-{bash-completion,use-tty-group,pylibmount,wall,minix,mesg,uuidd,write,cramfs,switch_root} \
 	--enable-fs-paths-extra=/usr/bin --localstatedir=/run --sbindir=${_pfx}/bin --with-pic
 make && \
