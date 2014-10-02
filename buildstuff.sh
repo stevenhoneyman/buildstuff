@@ -96,6 +96,9 @@ for src in musl musl-kernel-headers busybox make ncurses pkgconf popt zlib htop 
 	fi
 done
 
+## download all
+wait
+
 ### /* musl
 cd "$_tmp/musl-src"
 CC=/usr/bin/gcc CFLAGS="-Os" ./configure \
@@ -222,3 +225,15 @@ strip -s dropbearmulti && cp -v dropbearmulti "$_pfx/bin/"
 for p in dropbear dropbearkey dbclient ssh; do ln -s dropbearmulti "$_pfx/bin/$p"; done
 echo "dropbear $(awk '/define DROPBEAR_VERSION/ {gsub(/"/,"",$3); print $3}' sysoptions.h)-$(git log -1 --format=%cd.%h --date=short|tr -d -)" >>"$_pfx/version"
 ### dropbear */
+
+
+
+
+# remove libtool junk
+find "$_pfx" -type f -name *.la -delete
+
+# compress man pages
+find "$_pfx/share/man" -type f -exec gzip -9 '{}' \;
+
+# trash the downloaded source
+rm -rf "$_tmp"
