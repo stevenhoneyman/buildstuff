@@ -315,7 +315,7 @@ make && make install-binPROGRAMS install-pkgconfDATA install-pkgincludeHEADERS i
 git_pkg_ver "acl" >>"$_pfx/version"
 ### acl */
 
-# TODO: check include/sys/acl.h, include/attr/xattr.h exist before starting
+# TODO: check include/sys/acl.h, include/attr/xattr.h exist before starting coreutils build
 ### /* coreutils		#+# acl, attr before this
 cd "$_tmp/coreutils-src"
 ./bootstrap --skip-po
@@ -333,6 +333,36 @@ make && make install-strip
 make && strip -s src/coreutils && cp -v src/coreutils "$_pfx/bin/"
 git_pkg_ver "coreutils" | cut -f1,2,3 -d. >>"$_pfx/version"
 ### coreutils */
+
+### /* util-linux
+cd "$_tmp/util-linux-src"
+./autogen.sh
+## sbin... pfft...
+sed -i "/^usrsbin_execdir=/ s|/sbin|/bin|g" configure
+## hackish fix for musl libc
+# TODO: find an actual fix for logger ntp_gettime
+sed -i 's|ntp_gettime(&ntptv) == TIME_OK|0|g' misc-utils/logger.c
+## minor tweaks
+patch -p1 -i ${_breqs}/util-linux-nicer-fdisk.patch
+## 1 line descriptions ##
+mv sys-utils/swapoff.8 sw8 && cp sys-utils/swapon.8 sys-utils/swapff.8
+for mp in $(find *utils -name *.1 -o -name *.8|sed 's%schedutils/ionice.1%%'); do
+  sed -i "s#^.*fputs(USAGE_HEADER, \([a-z]*\)#\tfputs(_(\"$(grep -m1 "^$(basename ${mp%%.*})" "$mp"|sed s@\\\"@\'@g)\\\\n\"), \1);\n&#" ${mp%%.*}.c || true
+done
+mv sw8 sys-utils/swapoff.8
+### / ###
+./configure --prefix=${_pfx} --without-{python,user,udev,systemd} --disable-{rpath,nls,makeinstall-chown} \
+	--disable-{bash-completion,use-tty-group,pylibmount,wall,minix,mesg,uuidd,write,cramfs,switch_root} \
+	--enable-fs-paths-extra=/usr/bin --localstatedir=/run --sbindir=${_pfx}/bin --with-pic
+make && \
+make install-binPROGRAMS install-sbinPROGRAMS install-usrbin_execPROGRAMS install-usrsbin_execPROGRAMS \
+	install-nodist_blkidincHEADERS install-nodist_mountincHEADERS install-nodist_smartcolsincHEADERS \
+	install-uuidincHEADERS install-exec install-pkgconfigDATA
+git_pkg_ver "util-linux" >>"$_pfx/version"
+### util-linux */
+
+
+
 
 
 
