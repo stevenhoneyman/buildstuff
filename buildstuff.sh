@@ -121,6 +121,7 @@ function get_source() {
 #	netcat) 	svn co -q svn://svn.code.sf.net/p/netcat/code/trunk "$_tmp/netcat-src" ;;
 #	pax-utils) 	(cd "$_tmp" && cvs -qd :pserver:anonymous@anoncvs.gentoo.org:/var/cvsroot co -d ${1}-src gentoo-projects/${1}) ;;
 	popt) 		(cd "$_tmp" && cvs -qd :pserver:anonymous@rpm5.org:/cvs co -d popt-src popt) ;;
+	tree)		wget -nv http://mama.indstate.edu/users/ice/tree/src/tree-1.7.0.tgz -O-|tar zxf - -C "$_tmp" && mv "$_tmp"/${1}-* "$_tmp"/${1}-src ;;
 
 	## and then there's this! wtf? also, requiring unzip, to unzip unzip is stupid.
 #	unzip)	(wget http://antinode.info/ftp/info-zip/$(wget -qO- 'http://antinode.info/ftp/info-zip/?C=M;O=D;P=unzip*.zip'|grep -o 'unzip[0-9a-zA-Z_.-]*\.zip'|head -n1) -O "$_tmp/unzip.zip"
@@ -365,7 +366,11 @@ make install-binPROGRAMS install-sbinPROGRAMS install-usrbin_execPROGRAMS instal
 git_pkg_ver "util-linux" >>"$_pfx/version"
 ### util-linux */
 
-
+### /* tree
+cd "$_tmp/tree-src"
+make prefix=${_pfx} CC=${CC} CFLAGS="${CFLAGS/-D_GNU_SOURCE/} -DLINUX -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64"
+echo "tree 1.7.0" >>"$_pfx/version"
+### tree */
 
 
 
