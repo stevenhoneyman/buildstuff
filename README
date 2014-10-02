@@ -5,3 +5,4 @@ A script that... builds... stuff!
 
 I don't know what this will end up as yet, but it started life as a script to download and compile musl libc and busybox from their upstream git source code.
 
+- If your prefix is a symlink e.g. /musl then NODIRCHECK=1 skips the check

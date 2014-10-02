@@ -11,10 +11,12 @@ fi
 
 ## destination prefix
 export _pfx=/musl
-## local already cloned git sources
-export _gitdir=$HOME/git
 ## configs, patches, etc
 export _breqs=/opt/reqs
+## local already cloned git sources
+export _gitdir=$HOME/git
+## additional busybox applets
+export _bbext=$HOME/bbext
 ## temp dir for compiling
 export _tmp=$(mktemp -d)
 
@@ -24,7 +26,7 @@ export CFLAGS='-s -Os -march=x86-64 -mtune=generic -pipe -D_GNU_SOURCE'
 
 #######################
 
-if [ -e "$_pfx" ]; then
+if [ -e "$_pfx" ] && [ -z "$NODIRCHECK" ]; then
 	echo "$_pfx already exists, delete it and re-run"
 	exit 1
 fi
@@ -53,3 +55,34 @@ for src in musl musl-kernel-headers busybox; do
 		get_source "$src"
 	fi
 done
+
+### /* musl
+cd "$_tmp/musl-src"
+CC=/usr/bin/gcc CFLAGS="-Os" ./configure \
+	--prefix="$_pfx" --disable-shared --disable-debug
+make && make install || exit 3
+echo "musl $(<VERSION)-$(git log -1 --format=%cd.%h --date=short|tr -d -)" >>"$_pfx/version"
+export CC="$_pfx/bin/musl-gcc"
+
+cd "$_tmp/musl-kernel-headers-src"
+make ARCH=x86_64 prefix="$_pfx" install
+echo "kernel-headers $(git describe --tags|cut -d'-' -f'1,2').$(git log -1 --format=%cd.%h --date=short|tr -d -)" >>"$_pfx/version"
+### musl */
+
+### /* busybox
+cd "$_tmp/busybox-src"
+if [ -d "$_bbext" ]; then
+    cp -v "$_bbext/nproc/nproc.c" 	"coreutils/nproc.c"
+    cp -v "$_bbext/acpi/acpi.c" 	"miscutils/acpi.c"
+    cp -v "$_bbext/bin2c/bin2c.c" 	"miscutils/bin2c.c"
+    cp -v "$_bbext/uuidgen/uuidgen.c" 	"miscutils/uuidgen.c"
+    cp -v "$_bbext/nologin/nologin.c" 	"util-linux/nologin.c"
+fi
+cp -v "$_breqs/busybox.config" "$_tmp/busybox-src/.config"
+patch -p1 -i "$_breqs/busybox-1.22-dmesg-color.patch"
+patch -p1 -i "$_breqs/busybox-1.22-ifplugd-musl-fix.patch"
+[ -z "$CONFIG" ] || make gconfig
+cp .config "$_pfx"/busybox.config
+make CC="$_pfx/bin/musl-gcc" && install -Dm755 busybox "$_pfx"/bin/busybox || exit 3
+echo busybox $(sed 's/.git//' .kernelrelease)-$(git log -1 --format='%cd.%h' --date=short|tr -d '-') >>"$_pfx/version"
+### busybox */
