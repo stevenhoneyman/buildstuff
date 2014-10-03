@@ -390,7 +390,7 @@ cd "$_tmp/screen-src/src"
 ./autogen.sh
 ./configure --prefix=${_pfx} --disable-pam --enable-{colors256,rxvt_osc,telnet} \
      --with-pty-group=5 --with-socket-dir=/run/screens --with-sys-screenrc=/etc/screenrc
-make && make install-strip
+make && make install
 git_pkg_ver "screen" >>"$_pfx/version"
 ### screen */
 
@@ -406,20 +406,19 @@ git_pkg_ver "dash" >>"$_pfx/version"
 ### /* mksh
 cd "$_tmp/mksh-src"
 CPPFLAGS="-DMKSH_SMALL_BUT_FAST -DMKSH_S_NOVI -DMKSH_NOPWNAM" sh ./Build.sh -r -c lto
-./test.sh || exit 1
 strip -s ./mksh && cp -v mksh "${_pfx}/bin/"
 git_pkg_ver "mksh" >>"$_pfx/version"
 ### mksh */
 
 ### /* readline
-cd "$_tmp/mksh-src"
+cd "$_tmp/readline-src"
 CFLAGS="$CFLAGS -fPIC" ./configure --prefix=${_pfx} --with-curses --disable-shared
-make && make install-headers && cp -v lib*.a "${_pfx}/lib/"
+make && make install  #-headers && cp -v lib*.a "${_pfx}/lib/"
 git_pkg_ver "readline" >>"$_pfx/version"
 ### readline */
 
 ### /* bash
-cd "$_tmp/mksh-src"
+cd "$_tmp/bash-src"
 CFLAGS="${CFLAGS/-Os/-O2} -DDEFAULT_PATH_VALUE='\"/bin\"' -DSYS_BASHRC='\"/etc/bash.bashrc\"' -DSTANDARD_UTILS_PATH='\"/bin\"' -L${_pfx}/lib" \
 ./configure --prefix=${_pfx} --disable-nls --without-bash-malloc \
     --enable-static-link --enable-readline --with-installed-readline --with-curses
