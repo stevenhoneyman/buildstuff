@@ -71,11 +71,11 @@ function get_source() {
 
 	acl)		url="git://git.sv.gnu.org/acl.git" ;;
 	attr)		url="git://git.sv.gnu.org/attr.git" ;;
-#	bash)		url="git://git.sv.gnu.org/bash.git" ;;
+	bash)		url="git://git.sv.gnu.org/bash.git" ;;
 	coreutils)	url="git://git.sv.gnu.org/coreutils.git" ;;
 #	cryptsetup)	url="git://git.kernel.org/pub/scm/utils/cryptsetup/cryptsetup.git" ;;
 	cv)		url="git://github.com/Xfennec/cv.git" ;;
-#	dash)		url="git://git.kernel.org/pub/scm/utils/dash/dash.git" ;;
+	dash)		url="git://git.kernel.org/pub/scm/utils/dash/dash.git" ;;
 #	diffutils)	url="git://git.sv.gnu.org/diffutils.git" ;;
 	dropbear)	url="git://github.com/mkj/dropbear.git" ;;
 #	e2fsprogs)	url="git://git.kernel.org/pub/scm/fs/ext2/e2fsprogs.git" ;;
@@ -93,13 +93,14 @@ function get_source() {
 #	libnl-tiny)	url="git://github.com/sabotage-linux/libnl-tiny.git" ;;
 #	libpng)		url="git://git.code.sf.net/p/libpng/code" ;;
 	make)		url="git://git.sv.gnu.org/make.git" ;;
-#	mksh)		url="git://github.com/MirBSD/mksh.git" ;;
+	mksh)		url="git://github.com/MirBSD/mksh.git" ;;
 	multitail)	url="git://github.com/flok99/multitail.git" ;;
 #	nasm)		url="git://repo.or.cz/nasm.git" ;;
 #	openssl)	url="git://git.openssl.org/openssl.git" ;;
 #	patch)		url="git://git.sv.gnu.org/patch.git" ;;
+#	pipetoys)	url-"git://github.com/AndyA/pipetoys.git" ;;
 	pkgconf)	url="git://github.com/pkgconf/pkgconf.git" ;;
-#	readline)	url="git://git.sv.gnu.org/readline.git" ;;
+	readline)	url="git://git.sv.gnu.org/readline.git" ;;
 	screen)		url="git://git.sv.gnu.org/screen.git" ;;
 #	sed)		url="git://git.sv.gnu.org/sed.git" ;;
 #	sstrip)		url="git://github.com/BR903/ELFkickers.git" ;;
@@ -393,7 +394,58 @@ make && make install-strip
 git_pkg_ver "screen" >>"$_pfx/version"
 ### screen */
 
+### /* dash
+cd "$_tmp/dash-src"
+./autogen.sh
+CC=${CC} CFLAGS="$CFLAGS -ffunction-sections -fdata-sections" LDFLAGS="-Wl,--gc-sections" \
+    ./configure --prefix=${_pfx} --sysconfdir=/etc
+make && make install-strip
+git_pkg_ver "dash" >>"$_pfx/version"
+### dash */
 
+### /* mksh
+cd "$_tmp/mksh-src"
+CPPFLAGS="-DMKSH_SMALL_BUT_FAST -DMKSH_S_NOVI -DMKSH_NOPWNAM" sh ./Build.sh -r -c lto
+./test.sh || exit 1
+strip -s ./mksh && cp -v mksh "${_pfx}/bin/"
+git_pkg_ver "mksh" >>"$_pfx/version"
+### mksh */
+
+### /* readline
+cd "$_tmp/mksh-src"
+CFLAGS="$CFLAGS -fPIC" ./configure --prefix=${_pfx} --with-curses --disable-shared
+make && make install-headers && cp -v lib*.a "${_pfx}/lib/"
+git_pkg_ver "readline" >>"$_pfx/version"
+### readline */
+
+### /* bash
+cd "$_tmp/mksh-src"
+CFLAGS="${CFLAGS/-Os/-O2} -DDEFAULT_PATH_VALUE='\"/bin\"' -DSYS_BASHRC='\"/etc/bash.bashrc\"' -DSTANDARD_UTILS_PATH='\"/bin\"' -L${_pfx}/lib" \
+./configure --prefix=${_pfx} --disable-nls --without-bash-malloc \
+    --enable-static-link --enable-readline --with-installed-readline --with-curses
+sed -i 's|\(#define PPROMPT\).*$|\1 "[\\\\u@\\\\h \\\\W]\\\\$ "|' config-top.h
+sed -i 's|-lcurses|-lncursesw|' Makefile
+make && make install-strip
+find "${_pfx}/" -name "bashbug*" -delete
+git_pkg_ver "bash" >>"$_pfx/version"
+### bash */
+
+
+### /* netcat
+### /* minised
+### /* mdocml
+### /* hexedit
+### /* atop
+### /* bc
+### /* sstrip
+### /* tcc
+### /* wol
+### /* pixelserv
+### /* dumpelf	# pax-utils #
+### /* ncdu
+### /* cpuid
+### /* diffutils
+### /* less
 
 
 
