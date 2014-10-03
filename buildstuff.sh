@@ -88,7 +88,7 @@ function get_source() {
 	htop)		url="git://github.com/hishamhm/htop.git" ;;
 #	icoutils)	url="git://git.sv.gnu.org/icoutils.git" ;;
 #	iproute2)	url="git://git.kernel.org/pub/scm/linux/kernel/git/shemminger/iproute2.git" ;;
-#	iptables)	url="git://git.netfilter.org/iptables.git" ;;
+	iptables)	url="git://git.netfilter.org/iptables.git" ;;
 #	kmod)		url="git://git.kernel.org/pub/scm/utils/kernel/kmod/kmod.git" ;;
 #	libnl-tiny)	url="git://github.com/sabotage-linux/libnl-tiny.git" ;;
 #	libpng)		url="git://git.code.sf.net/p/libpng/code" ;;
@@ -100,7 +100,7 @@ function get_source() {
 #	patch)		url="git://git.sv.gnu.org/patch.git" ;;
 	pkgconf)	url="git://github.com/pkgconf/pkgconf.git" ;;
 #	readline)	url="git://git.sv.gnu.org/readline.git" ;;
-#	screen)		url="git://git.sv.gnu.org/screen.git" ;;
+	screen)		url="git://git.sv.gnu.org/screen.git" ;;
 #	sed)		url="git://git.sv.gnu.org/sed.git" ;;
 #	sstrip)		url="git://github.com/BR903/ELFkickers.git" ;;
 	strace)		url="git://git.code.sf.net/p/strace/code" ;;
@@ -197,9 +197,9 @@ CFLAGS="$CFLAGS -fPIC" ./configure --prefix="$_pfx" --sysconfdir=/etc \
 	--enable-{widec,symlinks,pc-files} --disable-rpath \
 	--without-{ada,cxx-binding,debug,develop,manpages,shared,tests} \
 	--with-{default-terminfo-dir,terminfo-dirs}=/usr/share/terminfo \
-	--disable-db-install --disable-home-terminfo --with-fallbacks="linux vt100 xterm xterm-256color"
+	--disable-db-install --with-fallbacks="linux vt100 xterm xterm-256color" #--disable-home-terminfo
 make && make install || exit 3
-cp -vnpP "$_pfx"/include/ncursesw/* "$_pfx/include"
+cp -vnpP "$_pfx"/include/ncurses*/* "$_pfx/include/"
 awk '/NCURSES_VERSION_STRING/ {gsub(/"/,"",$3); print "ncurses "$3}' config.status >>"$_pfx/version"
 ### ncurses */
 
@@ -371,6 +371,29 @@ cd "$_tmp/tree-src"
 make prefix=${_pfx} CC=${CC} CFLAGS="${CFLAGS/-D_GNU_SOURCE/} -DLINUX -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64"
 echo "tree 1.7.0" >>"$_pfx/version"
 ### tree */
+
+### /* iptables     ?? libnftnl libmnl ??
+cd "$_tmp/iptables-src"
+./autogen.sh
+sed -i '/^#inc.*types/a#include <sys/types.h>' include/linux/netfilter.h
+sed -i '/^#inc.*6_tab/a#include <sys/types.h>' iptables/xshared.h
+CFLAGS="$CFLAGS -D_GNU_SOURCE -D__GLIBC__=2 \
+    -DTCPOPT_WINDOW=2 -DTCPOPT_MAXSEG=2 -DTCPOPT_SACK_PERMITTED=4 -DTCPOPT_SACK=5 -DTCPOPT_TIMESTAMP=8" \
+./configure --prefix=${_pfx} --sbindir=${_pfx}/bin --sysconfdir=/etc --disable-{shared,ipv6,devel,nftables}
+make && make install-strip
+git_pkg_ver "iptables" >>"$_pfx/version"
+### iptables */
+
+### /* screen
+cd "$_tmp/screen-src/src"
+./autogen.sh
+./configure --prefix=${_pfx} --disable-pam --enable-{colors256,rxvt_osc,telnet} \
+     --with-pty-group=5 --with-socket-dir=/run/screens --with-sys-screenrc=/etc/screenrc
+make && make install-strip
+git_pkg_ver "screen" >>"$_pfx/version"
+### screen */
+
+
 
 
 
