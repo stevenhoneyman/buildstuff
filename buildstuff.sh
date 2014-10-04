@@ -47,6 +47,7 @@ function msg4() { echo -e "\e[94m==> $@\e[0m"; } # blue
 function msg5() { echo -e "\e[95m==> $@\e[0m"; } # magenta
 function msg6() { echo -e "\e[96m==> $@\e[0m"; } # cyan
 function msg7() { echo -e "\e[97m==> $@\e[0m"; } # white
+for i in {1..7}; do export -f msg$i ; done
 
 function git_pkg_ver() {
 	[[ -f "config.h" ]] && cf="config.h"
@@ -62,7 +63,7 @@ function cc_wget() {
 	wget -nv "$1" -O - | $CC $CFLAGS $LDFLAGS -x c - -s -o "$2"
 }
 
-function get_source() {
+function download_source() {
   local url="no"
   case $1 in
 	musl) 		url="git://git.musl-libc.org/musl" ;;
@@ -95,7 +96,7 @@ function get_source() {
 	make)		url="git://git.sv.gnu.org/make.git" ;;
 	mksh)		url="git://github.com/MirBSD/mksh.git" ;;
 	multitail)	url="git://github.com/flok99/multitail.git" ;;
-#	nasm)		url="git://repo.or.cz/nasm.git" ;;
+	nasm)		url="git://repo.or.cz/nasm.git" ;;
 #	openssl)	url="git://git.openssl.org/openssl.git" ;;
 #	patch)		url="git://git.sv.gnu.org/patch.git" ;;
 #	pipetoys)	url-"git://github.com/AndyA/pipetoys.git" ;;
@@ -103,13 +104,13 @@ function get_source() {
 	readline)	url="git://git.sv.gnu.org/readline.git" ;;
 	screen)		url="git://git.sv.gnu.org/screen.git" ;;
 #	sed)		url="git://git.sv.gnu.org/sed.git" ;;
-#	sstrip)		url="git://github.com/BR903/ELFkickers.git" ;;
+	sstrip)		url="git://github.com/BR903/ELFkickers.git" ;;
 	strace)		url="git://git.code.sf.net/p/strace/code" ;;
 #	tar)		url="git://git.sv.gnu.org/tar.git" ;;
 #	tcc)		url="git://repo.or.cz/tinycc.git" ;;
 	util-linux)	url="git://git.kernel.org/pub/scm/utils/util-linux/util-linux.git" ;;
 #	wget)		url="git://git.sv.gnu.org/wget.git" ;;
-#	yasm)		url="git://github.com/yasm/yasm.git" ;;
+	yasm)		url="git://github.com/yasm/yasm.git" ;;
 	zlib)		url="git://github.com/madler/zlib.git" ;;
 
 	## there's always a few awkward ones...
@@ -117,7 +118,7 @@ function get_source() {
 #	cpuid) 		wget -nv http://etallen.com/${1}/$(wget -qO- "http://etallen.com/$1/?C=M;O=D;F=1;P=$1*src*"|grep -om1 "$1.*gz") -O-|tar zxf - -C "$_tmp" && mv "$_tmp"/${1}-* "$_tmp"/${1}-src ;;
 #	distcc) 	svn co -q http://distcc.googlecode.com/svn/trunk/ "$_tmp/distcc-src" ;;
 #	less)		echo "TODO" http://www.greenwoodsoftware.com/less/less-458.tar.gz ;;
-	nano) 		svn co -q svn://svn.savannah.gnu.org/nano/trunk/nano "$_tmp/nano-src" ;;
+	nano) 		svn co svn://svn.savannah.gnu.org/nano/trunk/nano "$_tmp/nano-src" ;;
 	ncurses)	wget -nv ftp://invisible-island.net/ncurses/current/${_ncurses:-ncurses.tar.gz} -O - | tar zxf - -C "$_tmp" && mv "$_tmp"/${1}-* "$_tmp"/${1}-src ;;
 #	netcat) 	svn co -q svn://svn.code.sf.net/p/netcat/code/trunk "$_tmp/netcat-src" ;;
 #	pax-utils) 	(cd "$_tmp" && cvs -qd :pserver:anonymous@anoncvs.gentoo.org:/var/cvsroot co -d ${1}-src gentoo-projects/${1}) ;;
@@ -131,23 +132,30 @@ function get_source() {
 	*) url="no" ;;
   esac
 
-  [ $url != "no" ] && \
-	git clone --single-branch --depth=${_gitdepth} $url "${_tmp}/${1}-src" &
+  [[ "$url" == "no" ]] && : || \
+	git clone --single-branch --depth=${_gitdepth} $url "${_tmp}/${1}-src"
 }
+export -f download_source
 
-for src in musl musl-kernel-headers busybox acl attr bash bc coreutils cpuid cryptsetup cv dash diffutils distcc dropbear e2fsprogs ethtool file findutils gawk gzip hexedit htop icoutils iptables kmod libnl-tiny libpng make mksh multitail nano nasm ncurses netcat openssl patch pax-utils pkgconf popt readline screen sed sstrip strace tar tcc tree util-linux wget yasm zlib ; do
+#for src in musl musl-kernel-headers busybox acl attr bash bc coreutils cpuid cryptsetup cv dash diffutils distcc dropbear e2fsprogs ethtool file findutils gawk gzip hexedit htop icoutils iptables kmod libnl-tiny libpng make mksh multitail nano nasm ncurses netcat openssl patch pax-utils pkgconf popt readline screen sed sstrip strace tar tcc tree util-linux wget yasm zlib ; do
+
+
+function get_source() {
+	local src=$1
 	if [ -d "$_gitdir/$src" ]; then
 		msg3 "Updating $_gitdir/$src"; cd "$_gitdir/$src" && git pull
 		msg6 "Copying $src source"; cp -r "$_gitdir/$src" "$_tmp/${src}-src"
 	else
 		msg5 "Downloading $src source..."
-		get_source "$src"
+		download_source "$src"
 	fi
-done
+}
 
-## download all
-wait
+for inst in $@; do
+get_source $inst
+case $inst in
 
+musl)
 ### /* musl
 cd "$_tmp/musl-src"
 CC=/usr/bin/gcc CFLAGS="-Os" ./configure \
@@ -159,8 +167,10 @@ export CC="$_pfx/bin/musl-gcc"
 cd "$_tmp/musl-kernel-headers-src"
 make ARCH=x86_64 prefix="$_pfx" install
 echo "kernel-headers $(git describe --tags|cut -d'-' -f'1,2').$(git log -1 --format=%cd.%h --date=short|tr -d -)" >>"$_pfx/version"
-### musl */
+;; ### musl */
 
+
+busybox)
 ### /* busybox
 cd "$_tmp/busybox-src"
 if [ -d "$_bbext" ]; then
@@ -177,8 +187,9 @@ patch -p1 -i "$_breqs/busybox-1.22-ifplugd-musl-fix.patch"
 cp .config "$_pfx"/busybox.config
 make CC="$_pfx/bin/musl-gcc" && install -Dm755 busybox "$_pfx"/bin/busybox || exit 3
 echo busybox $(sed 's/.git//' .kernelrelease)-$(git log -1 --format='%cd.%h' --date=short|tr -d '-') >>"$_pfx/version"
-### busybox */
+;; ### busybox */
 
+pkgconf)
 ### /* pkgconf
 cd "$_tmp/pkgconf-src"
 ./autogen.sh
@@ -187,8 +198,9 @@ make && make check && make install && strip -s ${_pfx}/bin/pkgconf || exit 3
 ln -s "$_pfx"/bin/pkgconf "$_pfx/bin/pkg-config"
 git_pkg_ver "pkgconf" >>"$_pfx/version"
 export PKG_CONFIG="$_pfx/bin/pkg-config"
-### pkgconf */
+;; ### pkgconf */
 
+ncurses)
 ### /* ncurses
 cd "$_tmp/ncurses-src"
 ## Generated by:   sh -e ./tinfo/MKfallback.sh /usr/share/terminfo ../misc/terminfo.src /usr/bin/tic linux vt100 xterm xterm-256color >fallback.c
@@ -202,8 +214,9 @@ CFLAGS="$CFLAGS -fPIC" ./configure --prefix="$_pfx" --sysconfdir=/etc \
 make && make install || exit 3
 cp -vnpP "$_pfx"/include/ncurses*/* "$_pfx/include/"
 awk '/NCURSES_VERSION_STRING/ {gsub(/"/,"",$3); print "ncurses "$3}' config.status >>"$_pfx/version"
-### ncurses */
+;; ### ncurses */
 
+zlib)
 ### /* zlib
 cd "$_tmp/zlib-src"
 CFLAGS="$CFLAGS -fPIC" ./configure --prefix=${_pfx} --static --64
@@ -214,16 +227,18 @@ for b in minigzip{,64} contrib/minizip/mini{unz,zip} contrib/untgz/untgz; do
 	strip -s $b && cp -v $b "$_pfx/bin/"
 done
 echo "zlib $(git describe --tags|tr '-' ' ')" >>"$_pfx/version"
-### zlib */
+;; ### zlib */
 
+popt)
 ### /* popt
 cd "$_tmp/popt-src"
 ./autogen.sh
 CFLAGS="$CFLAGS -fPIC" ./configure --prefix=${_pfx} --disable-{nls,doxygen,shared}
 make && make install-strip
 awk '/PACKAGE_VERSION/ {gsub(/"/,"",$3); print "popt "$3}' config.h >>"$_pfx/version"
-### popt */
+;; ### popt */
 
+make)
 ### /* make
 cd "$_tmp/make-src"
 sed -i '/^SUBDIRS/s/doc//' Makefile.am
@@ -233,16 +248,18 @@ patch -p1 -i ${_breqs}/make4-git_bug23273.patch
 	--disable-nls --disable-rpath --without-guile
 make && strip -s make && cp make "$_pfx/bin/"
 git_pkg_ver "make" >>"$_pfx/version"
-### make */
+;; ### make */
 
+htop)
 ### /* htop
 cd "$_tmp/htop-src"
 ./autogen.sh
 ./configure --prefix=${_pfx} --sysconfdir=/etc
 make && strip -s htop && cp htop "$_pfx/bin/"
 git_pkg_ver "htop" >>"$_pfx/version"
-### htop */
+;; ### htop */
 
+nano)
 ### /* nano
 cd "$_tmp/nano-src"
 ./autogen.sh
@@ -252,7 +269,14 @@ cd "$_tmp/nano-src"
 	--enable-{color,nanorc,utf8}
 make && strip -s src/nano && cp src/nano "$_pfx/bin/"
 awk '/PACKAGE_VERSION/ {gsub(/"/,"",$3); print "nano "$3"'$(svnversion)'"}' config.h >>"$_pfx/version"
-### nano */
+;; ### nano */
+
+
+*) ;;
+esac
+done
+exit
+
 
 ### /* dropbear 			*** 272kb with zlib, 227kb without ***
 cd "$_tmp/dropbear-src"
@@ -407,13 +431,15 @@ git_pkg_ver "dash" >>"$_pfx/version"
 cd "$_tmp/mksh-src"
 CPPFLAGS="-DMKSH_SMALL_BUT_FAST -DMKSH_S_NOVI -DMKSH_NOPWNAM" sh ./Build.sh -r -c lto
 strip -s ./mksh && cp -v mksh "${_pfx}/bin/"
+install -Dm644 mksh.1 "${_pfx}/share/man/man1/mksh.1"
+install -Dm644 dot.mkshrc "${_pfx}/etc/skel/.mkshrc"
 git_pkg_ver "mksh" >>"$_pfx/version"
 ### mksh */
 
 ### /* readline
 cd "$_tmp/readline-src"
 CFLAGS="$CFLAGS -fPIC" ./configure --prefix=${_pfx} --with-curses --disable-shared
-make && make install  #-headers && cp -v lib*.a "${_pfx}/lib/"
+make && make install-headers && cp -v lib*.a "${_pfx}/lib/"
 git_pkg_ver "readline" >>"$_pfx/version"
 ### readline */
 
@@ -429,14 +455,32 @@ find "${_pfx}/" -name "bashbug*" -delete
 git_pkg_ver "bash" >>"$_pfx/version"
 ### bash */
 
+### /* sstrip
+cd "$_tmp/sstrip-src"
+make install prefix=${_pfx} CC="$CC -s"
+### sstrip */
+
+### /* nasm
+### nasm */
+
+### /* yasm
+### yasm */
+
+### /* less
+### less */
+
+### /* hexedit
+### hexedit */
+
+### /* atop
+### atop */
 
 ### /* netcat
+### netcat */
+
 ### /* minised
 ### /* mdocml
-### /* hexedit
-### /* atop
 ### /* bc
-### /* sstrip
 ### /* tcc
 ### /* wol
 ### /* pixelserv
@@ -444,7 +488,7 @@ git_pkg_ver "bash" >>"$_pfx/version"
 ### /* ncdu
 ### /* cpuid
 ### /* diffutils
-### /* less
+
 
 
 
