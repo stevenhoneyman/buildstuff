@@ -9,8 +9,10 @@ if [ $UID -eq 0 ]; then
 	exit 64
 fi
 
-## destination prefix
+## destination prefix for musl libc
 export _pfx=/musl
+## destination for compiles using glibc
+export _bin=$HOME/bin
 ## configs, patches, etc
 export _breqs=/opt/reqs
 ## local already cloned git sources
@@ -29,15 +31,16 @@ export _gitdepth=100
 #export _ncurses='ncurses-5.9-20140927.tgz'
 
 unset CC CXX CFLAGS CPPFLAGS CXXFLAGS LDFLAGS
+export CC="musl-gcc"
 export CXX=/bin/false
 export CFLAGS='-s -Os -march=x86-64 -mtune=generic -pipe -fno-strict-aliasing -fomit-frame-pointer -falign-functions=1 -falign-jumps=1 -falign-labels=1 -falign-loops=1 -fno-asynchronous-unwind-tables -fno-unwind-tables -fvisibility=hidden -D_GNU_SOURCE'
 
 #######################
 
-if [ -e "$_pfx" ] && [ -z "$NODIRCHECK" ]; then
-	echo "$_pfx already exists, delete it and re-run"
-	exit 1
-fi
+#if [ -e "$_pfx" ] && [ -z "$NODIRCHECK" ]; then
+#	echo "$_pfx already exists, delete it and re-run"
+#	exit 1
+#fi
 mkdir -p "$_pfx" || exit 1
 
 function msg1() { echo -e "\e[91m==> $@\e[0m"; } # red
@@ -88,10 +91,11 @@ function download_source() {
 #	hexedit)	url="git://github.com/pixel/hexedit.git" ;;
 	htop)		url="git://github.com/hishamhm/htop.git" ;;
 #	icoutils)	url="git://git.sv.gnu.org/icoutils.git" ;;
-#	iproute2)	url="git://git.kernel.org/pub/scm/linux/kernel/git/shemminger/iproute2.git" ;;
+	iproute2)	url="git://git.kernel.org/pub/scm/linux/kernel/git/shemminger/iproute2.git" ;;
 	iptables)	url="git://git.netfilter.org/iptables.git" ;;
+	iw)		url="git://git.kernel.org/pub/scm/linux/kernel/git/jberg/iw.git" ;;
 #	kmod)		url="git://git.kernel.org/pub/scm/utils/kernel/kmod/kmod.git" ;;
-#	libnl-tiny)	url="git://github.com/sabotage-linux/libnl-tiny.git" ;;
+	libnl-tiny)	url="git://github.com/sabotage-linux/libnl-tiny.git" ;;
 #	libpng)		url="git://git.code.sf.net/p/libpng/code" ;;
 	make)		url="git://git.sv.gnu.org/make.git" ;;
 	mksh)		url="git://github.com/MirBSD/mksh.git" ;;
@@ -158,8 +162,7 @@ case $inst in
 musl)
 ### /* musl
 cd "$_tmp/musl-src"
-CC=/usr/bin/gcc CFLAGS="-Os" ./configure \
-	--prefix="$_pfx" --disable-shared --disable-debug
+CC=/bin/gcc CFLAGS="-Os" ./configure --prefix="$_pfx" --disable-shared --disable-debug
 make && make install || exit 3
 echo "musl $(<VERSION)-$(git log -1 --format=%cd.%h --date=short|tr -d -)" >>"$_pfx/version"
 export CC="$_pfx/bin/musl-gcc"
@@ -271,14 +274,7 @@ make && strip -s src/nano && cp src/nano "$_pfx/bin/"
 awk '/PACKAGE_VERSION/ {gsub(/"/,"",$3); print "nano "$3"'$(svnversion)'"}' config.h >>"$_pfx/version"
 ;; ### nano */
 
-
-*) ;;
-esac
-done
-exit
-
-
-### /* dropbear 			*** 272kb with zlib, 227kb without ***
+dropbear) 			## *** 272kb with zlib, 227kb without ***
 cd "$_tmp/dropbear-src"
 patch -p1 -i ${_breqs}/dropbear-65-prevent-warning.patch
 autoreconf -fi
@@ -292,27 +288,27 @@ sed -e '/#define INETD_MODE/d'      	\
     -e '/#define DROPBEAR_TWOFISH/d' 	\
     -e '/#define SFTPSERVER_PATH/d' 	\
     -e '/DEFAULT_KEEPALIVE/s/0/30/'     -i options.h
-sed -i 's|-dropbear_" DROPBEAR_VERSION|"|' sysoptions.h
+sed -i 's|-dropbear_" DROPBEAR_VERSION|-sshserver_" "2014"|' sysoptions.h
 make PROGRAMS="dropbear dropbearkey dbclient" MULTI=1
 strip -s dropbearmulti && cp -v dropbearmulti "$_pfx/bin/"
 for p in dropbear dropbearkey dbclient ssh; do ln -s dropbearmulti "$_pfx/bin/$p"; done
 echo "dropbear $(awk '/define DROPBEAR_VERSION/ {gsub(/"/,"",$3); print $3}' sysoptions.h)-$(git log -1 --format=%cd.%h --date=short|tr -d -)" >>"$_pfx/version"
-### dropbear */
+;; ### dropbear */
 
-### /* xxd
+xxd)
 cc_wget 'https://vim.googlecode.com/hg/src/xxd/xxd.c' "${_pfx}/bin/xxd"
 echo "xxd 1.10" >>"$_pfx/version"
-### xxd */
+;; ### xxd */
 
-### /* strace
+strace)
 cd "$_tmp/strace-src"
 ./bootstrap
 ./configure --prefix=${_pfx}
 make && strip -s strace && cp -v strace "$_pfx/bin/"
 git_pkg_ver "strace" >>"$_pfx/version"
-### strace */
+;; ### strace */
 
-### /* multitail
+multitail)
 cd "$_tmp/multitail-src"
 _MT_VER="$(sed 's/VERSION=//' version)-$(git log -1 --format=%cd.%h --date=short|tr -d -)"
 sed -i '/ts...mt_started/d; /show_f1 =/d; s/if (show_f1)/if (0)/g' mt.c
@@ -321,32 +317,32 @@ install -Dm755 multitail      "${_pfx}/bin/multitail"
 install -Dm644 multitail.conf "${_pfx}/etc/multitail.conf"
 install -Dm644 multitail.1    "${_pfx}/share/man/man1/multitail.1"
 echo "multitail ${_MT_VER}" >>"$_pfx/version"
-### multitail */
+;; ### multitail */
 
-### /* cv
+cv)
 cd "$_tmp/cv-src"
 ${CC} ${CFLAGS} -s *.c -lncursesw ${LDFLAGS} -o "${_pfx}"/bin/cv
 echo $(awk '/VERSION/ {gsub(/"/,"",$3); print "'cv' "$3}' cv.h)-$(git log -1 --format=%cd.%h --date=short|tr -d -) >>"$_pfx/version"
-### cv */
+;; ### cv */
 
-### /* attr
+attr)
 cd "$_tmp/attr-src"
 ./autogen.sh
 CFLAGS="$CFLAGS -fPIC" ./configure --prefix=${_pfx} --disable-{nls,rpath,shared,debug}
 make && make install-binPROGRAMS install-pkgconfDATA install-pkgincludeHEADERS
 git_pkg_ver "attr" >>"$_pfx/version"
-### attr */
+;; ### attr */
 
-### /* acl			#+# attr before this
+acl)			#+# attr before this
 cd "$_tmp/acl-src"
 ./autogen.sh
 CFLAGS="$CFLAGS -fPIC" ./configure --prefix=${_pfx} --disable-{nls,rpath,shared,debug}
 make && make install-binPROGRAMS install-pkgconfDATA install-pkgincludeHEADERS install-sysincludeHEADERS
 git_pkg_ver "acl" >>"$_pfx/version"
-### acl */
+;; ### acl */
 
 # TODO: check include/sys/acl.h, include/attr/xattr.h exist before starting coreutils build
-### /* coreutils		#+# acl, attr before this
+coreutils)		#+# acl, attr before this
 cd "$_tmp/coreutils-src"
 ./bootstrap --skip-po
 ## Werror breaks compile
@@ -362,9 +358,9 @@ make && make install-strip
 	--enable-{acl,xattr} --without-gmp --enable-no-install-program=stdbuf --enable-single-binary=symlinks
 make && strip -s src/coreutils && cp -v src/coreutils "$_pfx/bin/"
 git_pkg_ver "coreutils" | cut -f1,2,3 -d. >>"$_pfx/version"
-### coreutils */
+;; ### coreutils */
 
-### /* util-linux
+util-linux)
 cd "$_tmp/util-linux-src"
 ./autogen.sh
 ## sbin... pfft...
@@ -389,15 +385,15 @@ make install-binPROGRAMS install-sbinPROGRAMS install-usrbin_execPROGRAMS instal
 	install-nodist_blkidincHEADERS install-nodist_mountincHEADERS install-nodist_smartcolsincHEADERS \
 	install-uuidincHEADERS install-exec install-pkgconfigDATA
 git_pkg_ver "util-linux" >>"$_pfx/version"
-### util-linux */
+;; ### util-linux */
 
-### /* tree
+tree)
 cd "$_tmp/tree-src"
 make prefix=${_pfx} CC=${CC} CFLAGS="${CFLAGS/-D_GNU_SOURCE/} -DLINUX -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64"
 echo "tree 1.7.0" >>"$_pfx/version"
-### tree */
+;; ### tree */
 
-### /* iptables     ?? libnftnl libmnl ??
+iptables)    ## ?? libnftnl libmnl ??
 cd "$_tmp/iptables-src"
 ./autogen.sh
 sed -i '/^#inc.*types/a#include <sys/types.h>' include/linux/netfilter.h
@@ -407,43 +403,43 @@ CFLAGS="$CFLAGS -D_GNU_SOURCE -D__GLIBC__=2 \
 ./configure --prefix=${_pfx} --sbindir=${_pfx}/bin --sysconfdir=/etc --disable-{shared,ipv6,devel,nftables}
 make && make install-strip
 git_pkg_ver "iptables" >>"$_pfx/version"
-### iptables */
+;; ### iptables */
 
-### /* screen
+screen)
 cd "$_tmp/screen-src/src"
 ./autogen.sh
 ./configure --prefix=${_pfx} --disable-pam --enable-{colors256,rxvt_osc,telnet} \
      --with-pty-group=5 --with-socket-dir=/run/screens --with-sys-screenrc=/etc/screenrc
 make && make install
 git_pkg_ver "screen" >>"$_pfx/version"
-### screen */
+;; ### screen */
 
-### /* dash
+dash)
 cd "$_tmp/dash-src"
 ./autogen.sh
 CC=${CC} CFLAGS="$CFLAGS -ffunction-sections -fdata-sections" LDFLAGS="-Wl,--gc-sections" \
     ./configure --prefix=${_pfx} --sysconfdir=/etc
 make && make install-strip
 git_pkg_ver "dash" >>"$_pfx/version"
-### dash */
+;; ### dash */
 
-### /* mksh
+mksh)
 cd "$_tmp/mksh-src"
 CPPFLAGS="-DMKSH_SMALL_BUT_FAST -DMKSH_S_NOVI -DMKSH_NOPWNAM" sh ./Build.sh -r -c lto
 strip -s ./mksh && cp -v mksh "${_pfx}/bin/"
 install -Dm644 mksh.1 "${_pfx}/share/man/man1/mksh.1"
 install -Dm644 dot.mkshrc "${_pfx}/etc/skel/.mkshrc"
 git_pkg_ver "mksh" >>"$_pfx/version"
-### mksh */
+;; ### mksh */
 
-### /* readline
+readline)
 cd "$_tmp/readline-src"
 CFLAGS="$CFLAGS -fPIC" ./configure --prefix=${_pfx} --with-curses --disable-shared
 make && make install-headers && cp -v lib*.a "${_pfx}/lib/"
 git_pkg_ver "readline" >>"$_pfx/version"
-### readline */
+;; ### readline */
 
-### /* bash
+bash)
 cd "$_tmp/bash-src"
 CFLAGS="${CFLAGS/-Os/-O2} -DDEFAULT_PATH_VALUE='\"/bin\"' -DSYS_BASHRC='\"/etc/bash.bashrc\"' -DSTANDARD_UTILS_PATH='\"/bin\"' -L${_pfx}/lib" \
 ./configure --prefix=${_pfx} --disable-nls --without-bash-malloc \
@@ -453,42 +449,95 @@ sed -i 's|-lcurses|-lncursesw|' Makefile
 make && make install-strip
 find "${_pfx}/" -name "bashbug*" -delete
 git_pkg_ver "bash" >>"$_pfx/version"
-### bash */
+;; ### bash */
 
-### /* sstrip
+sstrip)
 cd "$_tmp/sstrip-src"
-make install prefix=${_pfx} CC="$CC -s"
-### sstrip */
+make install prefix=${_pfx} CC="$CC -s" PROGRAMS="elfls objres rebind sstrip"
+;; ### sstrip */
 
-### /* nasm
-### nasm */
+mesa-utils)
+### /* mesa-utils
+mkdir -p "$_tmp/mesa-utils-src" && cd "$_tmp/mesa-utils-src"
+wget -nv http://cgit.freedesktop.org/mesa/demos/plain/src/xdemos/glinfo_common.c
+wget -nv http://cgit.freedesktop.org/mesa/demos/plain/src/xdemos/glinfo_common.h
+wget -nv http://cgit.freedesktop.org/mesa/demos/plain/src/xdemos/glxgears.c
+wget -nv http://cgit.freedesktop.org/mesa/demos/plain/src/xdemos/glxinfo.c
+gcc $CFLAGS glxinfo.c glinfo_common.c glinfo_common.h $LDFLAGS -lX11 -lGL -o "$_bin"/glxinfo-git -s
+gcc $CFLAGS glxgears.c $LDFLAGS -lX11 -lGL -lm -o "$_bin"/glxgears-git -s
+;; ### mesa-utils */
 
-### /* yasm
-### yasm */
+libnl-tiny)
+cd "$_tmp/libnl-tiny-src"
+make prefix=${_pfx} CC="$CC" CFLAGS="${CFLAGS/-D_GNU_SOURCE/}" ALL_LIBS=libnl-tiny.a install
+;;
 
-### /* less
-### less */
+iproute2)
 
-### /* hexedit
-### hexedit */
+;;
 
-### /* atop
-### atop */
+iw)
+cd "$_tmp/iw-src"
+make prefix=${_pfx} CC="$CC" CFLAGS="$CFLAGS -DCONFIG_LIBNL20 -DLIBNL1_COMPAT -I${_pfx}/include/libnl-tiny" PKG_CONFIG=${_pfx}/bin/pkg-config NLLIBNAME=libnl-tiny
+strip -s iw && cp iw "${_pfx}/bin/"
+install -Dm644 iw.8 "${_pfx}/share/man/man8/iw.8"
+;;
 
-### /* netcat
-### netcat */
+nasm)
+;; ### nasm */
 
-### /* minised
-### /* mdocml
-### /* bc
-### /* tcc
-### /* wol
-### /* pixelserv
-### /* dumpelf	# pax-utils #
-### /* ncdu
-### /* cpuid
-### /* diffutils
+yasm)
+;; ### yasm */
 
+less)
+;; ### less */
+
+hexedit)
+;; ### hexedit */
+
+atop)
+;; ### atop */
+
+netcat)
+;; ### netcat */
+
+ncdu)
+;; ### ncdu */
+
+
+mdocml)
+;; ### mdocml */
+
+bc)
+;; ### bc */
+
+tcc)
+;; ### tcc */
+
+minised)
+;; ### minised */
+
+wol)
+;; ### wol */
+
+pixelserv)
+;; ### pixelserv */
+
+dumpelf)	# pax-utils #
+;; ### dumpelf */
+
+cpuid)
+;; ### cpuid */
+
+diffutils)
+;; ### diffutils */
+
+
+
+*) ;;
+esac
+done
+exit
 
 
 
