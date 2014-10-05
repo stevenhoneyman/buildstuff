@@ -84,6 +84,7 @@ function download_source() {
 	acl)		url="git://git.sv.gnu.org/acl.git" ;;
 	attr)		url="git://git.sv.gnu.org/attr.git" ;;
 	bash)		url="git://git.sv.gnu.org/bash.git" ;;
+#	bison)		url="git://git.sv.gnu.org/bison.git" ;;
 	coreutils)	url="git://git.sv.gnu.org/coreutils.git" ;;
 #	cryptsetup)	url="git://git.kernel.org/pub/scm/utils/cryptsetup/cryptsetup.git" ;;
 	cv)		url="git://github.com/Xfennec/cv.git" ;;
@@ -94,6 +95,7 @@ function download_source() {
 #	ethtool)	url="git://git.kernel.org/pub/scm/network/ethtool/ethtool.git" ;;
 #	file)		url="git://github.com/file/file.git" ;;
 #	findutils)	url="git://git.sv.gnu.org/findutils.git" ;;
+	flex)		url="git://git.code.sf.net/p/flex/flex" ;;
 #	gawk)		url="git://git.sv.gnu.org/gawk.git" ;;
 #	gzip)		url="git://git.sv.gnu.org/gzip.git" ;;
 #	hexedit)	url="git://github.com/pixel/hexedit.git" ;;
@@ -109,7 +111,7 @@ function download_source() {
 	mksh)		url="git://github.com/MirBSD/mksh.git" ;;
 	multitail)	url="git://github.com/flok99/multitail.git" ;;
 	nasm)		url="git://repo.or.cz/nasm.git" ;;
-#	openssl)	url="git://git.openssl.org/openssl.git" ;;
+	openssl)	url="git://git.openssl.org/openssl.git" ;;
 #	patch)		url="git://git.sv.gnu.org/patch.git" ;;
 #	pipetoys)	url-"git://github.com/AndyA/pipetoys.git" ;;
 	pkgconf)	url="git://github.com/pkgconf/pkgconf.git" ;;
@@ -135,7 +137,7 @@ function download_source() {
 	nano) 		svn co svn://svn.savannah.gnu.org/nano/trunk/nano "$_tmp/nano-src" ;;
 	ncurses)	wget -nv ftp://invisible-island.net/ncurses/current/${_ncurses:-ncurses.tar.gz} -O - | tar zxf - -C "$_tmp" && mv "$_tmp"/${1}-* "$_tmp"/${1}-src ;;
 	netcat) 	svn co -q svn://svn.code.sf.net/p/netcat/code/trunk "$_tmp/netcat-src" ;;
-#	pax-utils) 	(cd "$_tmp" && cvs -qd :pserver:anonymous@anoncvs.gentoo.org:/var/cvsroot co -d ${1}-src gentoo-projects/${1}) ;;
+	pax-utils) 	(cd "$_tmp" && cvs -qd :pserver:anonymous@anoncvs.gentoo.org:/var/cvsroot co -d ${1}-src gentoo-projects/${1}) ;;
 	pcre)		svn co svn://vcs.exim.org/pcre/code/trunk "$_tmp/pcre-src" ;;
 	popt) 		(cd "$_tmp" && cvs -qd :pserver:anonymous@rpm5.org:/cvs co -d popt-src popt) ;;
 	tree)		wget -nv http://mama.indstate.edu/users/ice/tree/src/tree-1.7.0.tgz -O-|tar zxf - -C "$_tmp" && mv "$_tmp"/${1}-* "$_tmp"/${1}-src ;;
@@ -512,11 +514,13 @@ make && make install-strip
 git_pkg_ver "xz" >>"$_pfx/version"
 ;; ### xz */
 
-pcre)
+pcre)				#+# requires: readline #+#
 cd "$_tmp/pcre-src"
-#./configure --prefix=/usr/musl --enable-pcre16 --enable-pcre32 --disable-cpp --disable-pcregrep-jit --enable-unicode-properties
-#make && make install
-echo "pcre" >>"$_pfx/version"
+./autogen.sh
+./configure --prefix=${_pfx} --disable-{cpp,pcregrep-jit} --with-pic \
+    --enable-unicode-properties --enable-pcretest-libreadline  #--enable-pcre16 --enable-pcre32
+make && strip -s pcretest && make install-binPROGRAMS install-includeHEADERS install-nodist_includeHEADERS install-libLTLIBRARIES install-pkgconfigDATA
+echo "$(awk '/PACKAGE_VERSION/ {gsub(/"/,"",$3); print "pcre "$3}' $cf)-svn$(svnversion)" >>"$_pfx/version"
 ;; ### pcre */
 
 less)
@@ -559,6 +563,8 @@ mdocml)
 ;; ### mdocml */
 
 openssl)
+cd "$_tmp/openssl-src"
+./autogen.sh
 #sed -i 's/-DTERMIO/-DTERMIOS/g' Configure
 #sed -i 's/defined(linux)/0/' crypto/ui/ui_openssl.c
 #./config --prefix=${_pfx} --openssldir=/etc/ssl -L${_pfx}/lib -I${_pfx}/include no-dso no-krb5 no-shared zlib
@@ -572,14 +578,14 @@ openssl)
 wpa_supplicant)				#+# requires: openssl
 cd "$_tmp/wpa_supplicant-src/wpa_supplicant"
 #
-git_pkg_ver "wpa_supplicant" >>"$_pfx/version"
+#git_pkg_ver "wpa_supplicant" >>"$_pfx/version"
 ;; ### wpa_supplicant */
 
 flex)
 cd "$_tmp/flex-src"
-#./configure --prefix=${_pfx}
-#make && strip -s flex
-#make install-exec install-includeHEADERS
+./autogen.sh
+./configure --prefix=${_pfx}
+make && strip -s src/flex && cp src/flex "$_pfx/bin/"
 git_pkg_ver "flex" >>"$_pfx/version"
 ;; ### flex */
 
@@ -598,8 +604,13 @@ wol)
 pixelserv)
 ;; ### pixelserv */
 
-dumpelf)	# pax-utils #
-;; ### dumpelf */
+pax-utils)	# dumpelf, lddtree #
+cd "$_tmp/pax-utils-src"
+make CC="$CC" CFLAGS="$CFLAGS" USE_CAP=no USE_PYTHON=no PREFIX=${_pfx} strip install
+## open to better suggestions here!
+pax_ver=$(wget -qO- 'http://sources.gentoo.org/cgi-bin/viewvc.cgi/gentoo-x86/app-misc/pax-utils'|sed -n 's@.*ils-\([0-9.]*\).eb.*@\1@p'|sort -urV|head -n1)
+echo "pax-utils ${pax_ver}-cvs" >>"$_pfx/version"
+;; ### pax-utils */
 
 cpuid)
 ;; ### cpuid */
