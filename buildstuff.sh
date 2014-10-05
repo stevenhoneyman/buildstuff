@@ -58,7 +58,11 @@ function git_pkg_ver() {
 	[[ -f "lib/config.h" ]] && cf="lib/config.h"
 	[[ ! -z "$2" ]] && cf="$2"
 
-	[[ -f "$cf" ]] && echo $(awk '/PACKAGE_VERSION/ {gsub(/"/,"",$3); print "'$1' "$3}' $cf)-$(git log -1 --format=%cd.%h --date=short|tr -d -)
+	if [[ -f "$cf" ]]; then
+	    echo $(awk '/PACKAGE_VERSION/ {gsub(/"/,"",$3); print "'$1' "$3}' $cf)-$(git log -1 --format=%cd.%h --date=short|tr -d -)
+	else
+	    echo "$1 $(git log -1 --format=%cd.%h --date=short|tr -d -)"
+	fi
 }
 
 function cc_wget() {
@@ -165,8 +169,12 @@ cd "$_tmp/musl-src"
 CC=/bin/gcc CFLAGS="-Os" ./configure --prefix="$_pfx" --disable-shared --disable-debug
 make && make install || exit 3
 echo "musl $(<VERSION)-$(git log -1 --format=%cd.%h --date=short|tr -d -)" >>"$_pfx/version"
-export CC="$_pfx/bin/musl-gcc"
-
+#if [[ -e "/usr/lib/ccache/bin/musl-gcc" ]]; then		# TODO: fix (ccache: error: Could not find compiler "musl-gcc" in PATH)
+#    msg2 'ccache symlink found, using that as $CC'
+#    export CC="/usr/lib/ccache/bin/musl-gcc"
+#else
+    export CC="$_pfx/bin/musl-gcc"
+#fi
 cd "$_tmp/musl-kernel-headers-src"
 make ARCH=x86_64 prefix="$_pfx" install
 echo "kernel-headers $(git describe --tags|cut -d'-' -f'1,2').$(git log -1 --format=%cd.%h --date=short|tr -d -)" >>"$_pfx/version"
@@ -407,10 +415,14 @@ git_pkg_ver "iptables" >>"$_pfx/version"
 
 screen)
 cd "$_tmp/screen-src/src"
+mkdir -p ${_pfx}/extra/screen/terminfo
+sed -i "s|tic|tic -o $_pfx/extra/screen|; /chmod/d" Makefile.in
 ./autogen.sh
 ./configure --prefix=${_pfx} --disable-pam --enable-{colors256,rxvt_osc,telnet} \
      --with-pty-group=5 --with-socket-dir=/run/screens --with-sys-screenrc=/etc/screenrc
 make && make install
+rm -f config.h		# yeah, whatever - fix your PACKAGE_VERSION then, GNU!
+awk '/^VERSION/ {print "#define PACKAGE_VERSION "$3}' Makefile >config.h
 git_pkg_ver "screen" >>"$_pfx/version"
 ;; ### screen */
 
@@ -453,6 +465,7 @@ git_pkg_ver "bash" >>"$_pfx/version"
 
 sstrip)
 cd "$_tmp/sstrip-src"
+sed -i '/cp doc/d; s/cp /cp -f /g' Makefile
 make install prefix=${_pfx} CC="$CC -s" PROGRAMS="elfls objres rebind sstrip"
 git_pkg_ver "sstrip" >>"$_pfx/version"
 ;; ### sstrip */
@@ -473,7 +486,7 @@ libnl-tiny)
 cd "$_tmp/libnl-tiny-src"
 make prefix=${_pfx} CC="$CC" CFLAGS="${CFLAGS/-D_GNU_SOURCE/}" ALL_LIBS=libnl-tiny.a install
 git_pkg_ver "libnl-tiny" >>"$_pfx/version"
-;;
+;; ### libnl-tiny */
 
 iproute2)
 cd "$_tmp/iproute2-src"
@@ -482,14 +495,15 @@ sed -i '/^TARGET/s/arpd//' misc/Makefile
 sed -i '/example/d; s/doc//g' Makefile
 make CFLAGS="$CFLAGS -DHAVE_SETNS -I../include" CC="$CC -s" SHARED_LIBS=n PREFIX=${_pfx} SBINDIR=${_pfx}/bin install
 git_pkg_ver "iproute2" >>"$_pfx/version"
-;;
+;; ### iproute2 */
 
 iw)
 cd "$_tmp/iw-src"
 make prefix=${_pfx} CC="$CC" CFLAGS="$CFLAGS -DCONFIG_LIBNL20 -DLIBNL1_COMPAT -I${_pfx}/include/libnl-tiny" PKG_CONFIG=${_pfx}/bin/pkg-config NLLIBNAME=libnl-tiny
 strip -s iw && cp iw "${_pfx}/bin/"
 install -Dm644 iw.8 "${_pfx}/share/man/man8/iw.8"
-;;
+git_pkg_ver "iw" >>"$_pfx/version"
+;; ### iw */
 
 nasm)
 ;; ### nasm */
