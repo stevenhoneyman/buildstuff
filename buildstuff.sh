@@ -454,6 +454,7 @@ git_pkg_ver "bash" >>"$_pfx/version"
 sstrip)
 cd "$_tmp/sstrip-src"
 make install prefix=${_pfx} CC="$CC -s" PROGRAMS="elfls objres rebind sstrip"
+git_pkg_ver "sstrip" >>"$_pfx/version"
 ;; ### sstrip */
 
 mesa-utils)
@@ -465,15 +466,22 @@ wget -nv http://cgit.freedesktop.org/mesa/demos/plain/src/xdemos/glxgears.c
 wget -nv http://cgit.freedesktop.org/mesa/demos/plain/src/xdemos/glxinfo.c
 gcc $CFLAGS glxinfo.c glinfo_common.c glinfo_common.h $LDFLAGS -lX11 -lGL -o "$_bin"/glxinfo-git -s
 gcc $CFLAGS glxgears.c $LDFLAGS -lX11 -lGL -lm -o "$_bin"/glxgears-git -s
+git_pkg_ver "mesa-utils" >>"$_pfx/version"
 ;; ### mesa-utils */
 
 libnl-tiny)
 cd "$_tmp/libnl-tiny-src"
 make prefix=${_pfx} CC="$CC" CFLAGS="${CFLAGS/-D_GNU_SOURCE/}" ALL_LIBS=libnl-tiny.a install
+git_pkg_ver "libnl-tiny" >>"$_pfx/version"
 ;;
 
 iproute2)
-
+cd "$_tmp/iproute2-src"
+sed -i '/_GLIBC_/d; s/else/if 0/g' include/libiptc/ipt_kernel_headers.h
+sed -i '/^TARGET/s/arpd//' misc/Makefile
+sed -i '/example/d; s/doc//g' Makefile
+make CFLAGS="$CFLAGS -DHAVE_SETNS -I../include" CC="$CC -s" SHARED_LIBS=n PREFIX=${_pfx} SBINDIR=${_pfx}/bin install
+git_pkg_ver "iproute2" >>"$_pfx/version"
 ;;
 
 iw)
