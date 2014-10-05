@@ -564,15 +564,20 @@ mdocml)
 
 openssl)
 cd "$_tmp/openssl-src"
-./autogen.sh
-#sed -i 's/-DTERMIO/-DTERMIOS/g' Configure
-#sed -i 's/defined(linux)/0/' crypto/ui/ui_openssl.c
-#./config --prefix=${_pfx} --openssldir=/etc/ssl -L${_pfx}/lib -I${_pfx}/include no-dso no-krb5 no-shared zlib
-#make depend build_libs
-#make build_apps openssl.pc libssl.pc libcrypto.pc
-#make INSTALL_PREFIX=$PWD/OUT install_sw
+sed -i 's/-DTERMIO/&S/g' Configure
+sed -i 's/defined(linux)/0/' crypto/ui/ui_openssl.c
+sed -i '/LD_LIBRARY_PATH/d' Makefile.shared
+sed -i '/pod2man/s/sh -c/true &/g; /PREFIX.*MANDIR.*SUFFIX/d' Makefile.org
+./config --prefix=${_pfx} --openssldir=/etc/ssl -L${_pfx}/lib -I${_pfx}/include no-dso no-krb5 zlib ${CFLAGS} #no-shared
+make depend
+make build_libs
+make build_apps openssl.pc libssl.pc libcrypto.pc
+make INSTALL_PREFIX=$PWD/OUT install_sw
 ## OUT/etc/* ignored
-#cp -rv --no-clobber OUT/${_pfx}/* ${_pfx}/
+cp -rv OUT/${_pfx}/* ${_pfx}/
+mv "${_pfx}"/bin/c_rehash "${_pfx}"/bin/c_rehash.pl
+wget -nv "http://git.pld-linux.org/?p=packages/openssl.git;a=blob_plain;f=openssl-c_rehash.sh" -O "${_pfx}"/bin/c_rehash
+echo $(awk '/VERSION_NUMBER/ {gsub(/"/,"",$3); print "openssl "$3}' Makefile)-$(git log -1 --format=%cd.%h --date=short|tr -d -) >>"$_pfx/version"
 ;; ### openssl */
 
 wpa_supplicant)				#+# requires: openssl
