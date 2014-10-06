@@ -34,6 +34,7 @@ unset CC CXX CFLAGS CPPFLAGS CXXFLAGS LDFLAGS
 export CC="musl-gcc"
 export CXX=/bin/false
 export CFLAGS='-s -Os -march=x86-64 -mtune=generic -pipe -fno-strict-aliasing -fomit-frame-pointer -falign-functions=1 -falign-jumps=1 -falign-labels=1 -falign-loops=1 -fno-asynchronous-unwind-tables -fno-unwind-tables -fvisibility=hidden -D_GNU_SOURCE'
+export _orig_CFLAGS="${CFLAGS}"
 
 #######################
 
@@ -580,10 +581,15 @@ wget -nv "http://git.pld-linux.org/?p=packages/openssl.git;a=blob_plain;f=openss
 echo $(awk '/VERSION_NUMBER/ {gsub(/"/,"",$3); print "openssl "$3}' Makefile)-$(git log -1 --format=%cd.%h --date=short|tr -d -) >>"$_pfx/version"
 ;; ### openssl */
 
-wpa_supplicant)				#+# requires: openssl
+wpa_supplicant)				#+# requires: openssl, zlib
 cd "$_tmp/wpa_supplicant-src/wpa_supplicant"
-#
-#git_pkg_ver "wpa_supplicant" >>"$_pfx/version"
+cp defconfig .config
+sed -i 's|__uint|uint|g; s|__int|int|g' ../src/drivers/linux_wext.h
+sed -i '/wpa_.*s.*LIBS/s/$/& -lz/' Makefile
+CFLAGS="$CFLAGS -DCONFIG_LIBNL20=y -I${_pfx}/include/libnl-tiny" CONFIG_LIBNL_TINY=y make
+strip -s wpa_{cli,passphrase,supplicant} && make BINDIR=${_pfx}/bin install
+install -Dm600 wpa_supplicant.conf "${_pfx}"/etc/wpa_supplicant.conf
+git_pkg_ver "wpa_supplicant" >>"$_pfx/version"
 ;; ### wpa_supplicant */
 
 flex)
