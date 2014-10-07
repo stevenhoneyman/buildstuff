@@ -90,7 +90,7 @@ function download_source() {
 #	cryptsetup)	url="git://git.kernel.org/pub/scm/utils/cryptsetup/cryptsetup.git" ;;
 	cv)		url="git://github.com/Xfennec/cv.git" ;;
 	dash)		url="git://git.kernel.org/pub/scm/utils/dash/dash.git" ;;
-#	diffutils)	url="git://git.sv.gnu.org/diffutils.git" ;;
+	diffutils)	url="git://git.sv.gnu.org/diffutils.git" ;;
 	dropbear)	url="git://github.com/mkj/dropbear.git" ;;
 #	e2fsprogs)	url="git://git.kernel.org/pub/scm/fs/ext2/e2fsprogs.git" ;;
 #	ethtool)	url="git://git.kernel.org/pub/scm/network/ethtool/ethtool.git" ;;
@@ -112,9 +112,10 @@ function download_source() {
 	mksh)		url="git://github.com/MirBSD/mksh.git" ;;
 	multitail)	url="git://github.com/flok99/multitail.git" ;;
 	nasm)		url="git://repo.or.cz/nasm.git" ;;
+	ncdu)		url="git://g.blicky.net/ncdu.git" ;;
 	openssl)	url="git://git.openssl.org/openssl.git" ;;
-#	patch)		url="git://git.sv.gnu.org/patch.git" ;;
-#	pipetoys)	url-"git://github.com/AndyA/pipetoys.git" ;;
+	patch)		url="git://git.sv.gnu.org/patch.git" ;;
+	pipetoys)	url-"git://github.com/AndyA/pipetoys.git" ;;
 	pkgconf)	url="git://github.com/pkgconf/pkgconf.git" ;;
 	readline)	url="git://git.sv.gnu.org/readline.git" ;;
 	screen)		url="git://git.sv.gnu.org/screen.git" ;;
@@ -131,10 +132,11 @@ function download_source() {
 	zlib)		url="git://github.com/madler/zlib.git" ;;
 
 	## there's always a few awkward ones...
-#	bc) 		wget -nv ftp://alpha.gnu.org/gnu/bc/bc-1.06.95.tar.bz2 -O-|tar jxf - -C "$_tmp" && mv "$_tmp"/${1}-* "$_tmp"/${1}-src ;;
-#	cpuid) 		wget -nv http://etallen.com/${1}/$(wget -qO- "http://etallen.com/$1/?C=M;O=D;F=1;P=$1*src*"|grep -om1 "$1.*gz") -O-|tar zxf - -C "$_tmp" && mv "$_tmp"/${1}-* "$_tmp"/${1}-src ;;
+	bc) 		wget -nv ftp://alpha.gnu.org/gnu/bc/bc-1.06.95.tar.bz2 -O-|tar jxf - -C "$_tmp" && mv "$_tmp"/${1}-* "$_tmp"/${1}-src ;;
+	cpuid) 		wget -nv http://etallen.com/${1}/$(wget -qO- "http://etallen.com/$1/?C=M;O=D;F=1;P=$1*src*"|grep -om1 "$1.*gz") -O-|tar zxf - -C "$_tmp" && mv "$_tmp"/${1}-* "$_tmp"/${1}-src ;;
 #	distcc) 	svn co -q http://distcc.googlecode.com/svn/trunk/ "$_tmp/distcc-src" ;;
 	less)		wget -nv http://www.greenwoodsoftware.com/less/$(wget http://www.greenwoodsoftware.com/less/download.html -qO-|grep -om1 'less-[0-9]*\.tar\.gz') -O-|tar zxf - -C "$_tmp" && mv "$_tmp"/${1}-* "$_tmp"/${1}-src ;;
+#	mdocml)		wget -nv http://mdocml.bsd.lv/snapshots/mdocml.tar.gz -O-|tar zxf - -C "$_tmp" && mv "$_tmp"/${1}-* "$_tmp"/${1}-src ;;
 	nano) 		svn co svn://svn.savannah.gnu.org/nano/trunk/nano "$_tmp/nano-src" ;;
 	ncurses)	wget -nv ftp://invisible-island.net/ncurses/current/${_ncurses:-ncurses.tar.gz} -O - | tar zxf - -C "$_tmp" && mv "$_tmp"/${1}-* "$_tmp"/${1}-src ;;
 	netcat) 	svn co -q svn://svn.code.sf.net/p/netcat/code/trunk "$_tmp/netcat-src" ;;
@@ -595,13 +597,51 @@ git_pkg_ver "wpa_supplicant" >>"$_pfx/version"
 flex)
 cd "$_tmp/flex-src"
 ./autogen.sh
-./configure --prefix=${_pfx}
-make && strip -s src/flex && cp src/flex "$_pfx/bin/"
+sed -i '/doc /d; /tests /d' Makefile.am
+./configure --prefix=${_pfx} CXX=/bin/false CXXCPP=/bin/cpp
+make -C src flex && strip -s src/flex
+make -C src install-binPROGRAMS install-includeHEADERS install-libLTLIBRARIES
 git_pkg_ver "flex" >>"$_pfx/version"
 ;; ### flex */
 
-bc)					#+# requires: flex
+bc)					# TODO: fails to use readline. fix and/or try libedit
+cd "$_tmp/bc-src"
+./configure --prefix=${_pfx}
+make && strip -s bc/bc && cp -v bc/bc "$_pfx/bin/"
+echo "bc 1.06.95" >>"$_pfx/version"
 ;; ### bc */
+
+cpuid)
+cd "$_tmp/cpuid-src"
+make CC="$CC -s" CFLAGS="$CFLAGS"
+cp -v cpuid "$_pfx/bin/"
+echo "cpuid $(sed -n 's@^VERSION=\([0-9.]*\).*$@\1@p' Makefile)" >>"$_pfx/version"
+;; ### cpuid */
+
+diffutils)
+cd "$_tmp/diffutils-src"
+./bootstrap --skip-po
+./configure --prefix=${_pfx} --disable-nls --disable-rpath
+make && make install-strip
+git_pkg_ver "diffutils" >>"$_pfx/version"
+;; ### diffutils */
+
+patch)
+cd "$_tmp/patch-src"
+./bootstrap --skip-po
+./configure --prefix=${_pfx}
+sed -i 's|/usr||g' config.h
+make && make install-strip
+git_pkg_ver "patch" >>"$_pfx/version"
+;; ### patch */
+
+pipetoys)
+cd "$_tmp/pipetoys-src"
+autoreconf -i
+./configure --prefix=${_pfx}
+make && make install-strip
+git_pkg_ver "pipetoys" >>"$_pfx/version"
+;; ### pipetoys */
 
 tcc)
 ;; ### tcc */
@@ -622,12 +662,6 @@ make CC="$CC" CFLAGS="$CFLAGS" USE_CAP=no USE_PYTHON=no PREFIX=${_pfx} strip ins
 pax_ver=$(wget -qO- 'http://sources.gentoo.org/cgi-bin/viewvc.cgi/gentoo-x86/app-misc/pax-utils'|sed -n 's@.*ils-\([0-9.]*\).eb.*@\1@p'|sort -urV|head -n1)
 echo "pax-utils ${pax_ver}-cvs" >>"$_pfx/version"
 ;; ### pax-utils */
-
-cpuid)
-;; ### cpuid */
-
-diffutils)
-;; ### diffutils */
 
 
 
