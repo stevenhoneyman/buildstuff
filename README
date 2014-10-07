@@ -1,16 +1,15 @@
 buildstuff
 ==========
 
+NOTE: UNDER DEVELOPMENT - MAY NOT WORK!
+
 A script that... builds... stuff!
 
-I don't know what this will end up as yet, but it started life as a script to download and compile musl libc and busybox from their upstream git source code.
-
-An initramfs mini-distro could be a possibility.
+This was originally a script to download and compile musl libc and busybox from their upstream git source code, but is becoming closer to an initramfs based mini-distro (at which point the name will change).
 
 Notes
 -----
 
-- If your prefix is a symlink e.g. /musl then NODIRCHECK=1 skips the check
 - CONFIG=1 allows gconfig of busybox
 
 
@@ -19,4 +18,5 @@ TODO
 
 - Rewrite the download function
 - Make it more easily configurable
-
+- X?
+- gcc shared/musl static choice
