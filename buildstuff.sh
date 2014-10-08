@@ -88,16 +88,19 @@ function download_source() {
 #	bison)		url="git://git.sv.gnu.org/bison.git" ;;
 	coreutils)	url="git://git.sv.gnu.org/coreutils.git" ;;
 #	cryptsetup)	url="git://git.kernel.org/pub/scm/utils/cryptsetup/cryptsetup.git" ;;
+#	curl)		url="git://github.com/bagder/curl.git" ;;
 	cv)		url="git://github.com/Xfennec/cv.git" ;;
 	dash)		url="git://git.kernel.org/pub/scm/utils/dash/dash.git" ;;
 	diffutils)	url="git://git.sv.gnu.org/diffutils.git" ;;
 	dropbear)	url="git://github.com/mkj/dropbear.git" ;;
 #	e2fsprogs)	url="git://git.kernel.org/pub/scm/fs/ext2/e2fsprogs.git" ;;
 #	ethtool)	url="git://git.kernel.org/pub/scm/network/ethtool/ethtool.git" ;;
+#	eudev)		url="git://github.com/gentoo/eudev.git" ;;
 #	file)		url="git://github.com/file/file.git" ;;
 #	findutils)	url="git://git.sv.gnu.org/findutils.git" ;;
 	flex)		url="git://git.code.sf.net/p/flex/flex" ;;
 #	gawk)		url="git://git.sv.gnu.org/gawk.git" ;;
+	gnulib)		url="git://git.sv.gnu.org/gnulib.git" ;;
 #	gzip)		url="git://git.sv.gnu.org/gzip.git" ;;
 #	hexedit)	url="git://github.com/pixel/hexedit.git" ;;
 	htop)		url="git://github.com/hishamhm/htop.git" ;;
@@ -106,15 +109,21 @@ function download_source() {
 	iptables)	url="git://git.netfilter.org/iptables.git" ;;
 	iw)		url="git://git.kernel.org/pub/scm/linux/kernel/git/jberg/iw.git" ;;
 #	kmod)		url="git://git.kernel.org/pub/scm/utils/kernel/kmod/kmod.git" ;;
+	lbzip2)		url="git://github.com/kjn/lbzip2.git" ;;
 	libnl-tiny)	url="git://github.com/sabotage-linux/libnl-tiny.git" ;;
 #	libpng)		url="git://git.code.sf.net/p/libpng/code" ;;
+	lz4)		url="git://github.com/Cyan4973/lz4.git" ;;
 	make)		url="git://git.sv.gnu.org/make.git" ;;
+#	md5deep)	url="git://github.com/jessek/hashdeep.git" ;;
 	mksh)		url="git://github.com/MirBSD/mksh.git" ;;
 	multitail)	url="git://github.com/flok99/multitail.git" ;;
 	nasm)		url="git://repo.or.cz/nasm.git" ;;
+	nbwmon)		url="git://github.com/causes-/nbwmon.git" ;;
 	ncdu)		url="git://g.blicky.net/ncdu.git" ;;
 	openssl)	url="git://git.openssl.org/openssl.git" ;;
 	patch)		url="git://git.sv.gnu.org/patch.git" ;;
+	patchelf)	url="git://github.com/NixOS/patchelf.git" ;;
+#	pigz)		url="git://github.com/madler/pigz.git" ;;
 	pipetoys)	url-"git://github.com/AndyA/pipetoys.git" ;;
 	pkgconf)	url="git://github.com/pkgconf/pkgconf.git" ;;
 	readline)	url="git://git.sv.gnu.org/readline.git" ;;
@@ -137,13 +146,15 @@ function download_source() {
 #	distcc) 	svn co -q http://distcc.googlecode.com/svn/trunk/ "$_tmp/distcc-src" ;;
 	less)		wget -nv http://www.greenwoodsoftware.com/less/$(wget http://www.greenwoodsoftware.com/less/download.html -qO-|grep -om1 'less-[0-9]*\.tar\.gz') -O-|tar zxf - -C "$_tmp" && mv "$_tmp"/${1}-* "$_tmp"/${1}-src ;;
 #	mdocml)		wget -nv http://mdocml.bsd.lv/snapshots/mdocml.tar.gz -O-|tar zxf - -C "$_tmp" && mv "$_tmp"/${1}-* "$_tmp"/${1}-src ;;
+#	minised)	svn co http://svn.exactcode.de/minised/trunk/ "$_tmp/minised-src" ;;
 	nano) 		svn co svn://svn.savannah.gnu.org/nano/trunk/nano "$_tmp/nano-src" ;;
-	ncurses)	wget -nv ftp://invisible-island.net/ncurses/current/${_ncurses:-ncurses.tar.gz} -O - | tar zxf - -C "$_tmp" && mv "$_tmp"/${1}-* "$_tmp"/${1}-src ;;
+	ncurses)	wget -nv ftp://invisible-island.net/ncurses/current/${_ncurses:-ncurses.tar.gz} -O-| tar zxf - -C "$_tmp" && mv "$_tmp"/${1}-* "$_tmp"/${1}-src ;;
 	netcat) 	svn co -q svn://svn.code.sf.net/p/netcat/code/trunk "$_tmp/netcat-src" ;;
 	pax-utils) 	(cd "$_tmp" && cvs -qd :pserver:anonymous@anoncvs.gentoo.org:/var/cvsroot co -d ${1}-src gentoo-projects/${1}) ;;
 	pcre)		svn co svn://vcs.exim.org/pcre/code/trunk "$_tmp/pcre-src" ;;
 	popt) 		(cd "$_tmp" && cvs -qd :pserver:anonymous@rpm5.org:/cvs co -d popt-src popt) ;;
 	tree)		wget -nv http://mama.indstate.edu/users/ice/tree/src/tree-1.7.0.tgz -O-|tar zxf - -C "$_tmp" && mv "$_tmp"/${1}-* "$_tmp"/${1}-src ;;
+	wol)	 	svn co -q svn://svn.code.sf.net/p/wake-on-lan/code/trunk "$_tmp/wol-src" ;;
 
 	## and then there's this! wtf? also, requiring unzip, to unzip unzip is stupid.
 #	unzip)	(wget http://antinode.info/ftp/info-zip/$(wget -qO- 'http://antinode.info/ftp/info-zip/?C=M;O=D;P=unzip*.zip'|grep -o 'unzip[0-9a-zA-Z_.-]*\.zip'|head -n1) -O "$_tmp/unzip.zip"
@@ -170,6 +181,14 @@ function get_source() {
 		download_source "$src"
 	fi
 }
+
+if [[ ! -z "$GNULIB_SRCDIR" ]]; then
+    echo "Using GNUlib from $GNULIB_SRCDIR"
+else
+    msg5 'Downloading GNUlib. Consider setting $GNULIB_SRCDIR for faster builds'
+    download_source gnulib
+    export GNULIB_SRCDIR="${_tmp}/gnulib-src"
+fi
 
 for inst in $@; do
 get_source $inst
@@ -550,21 +569,6 @@ make install-binPROGRAMS install-man
 git_pkg_ver "yasm" >>"$_pfx/version"
 ;; ### yasm */
 
-hexedit)
-;; ### hexedit */
-
-atop)
-;; ### atop */
-
-netcat)
-;; ### netcat */
-
-ncdu)
-;; ### ncdu */
-
-mdocml)
-;; ### mdocml */
-
 openssl)
 cd "$_tmp/openssl-src"
 sed -i 's/-DTERMIO/&S/g' Configure
@@ -643,18 +647,6 @@ make && make install-strip
 git_pkg_ver "pipetoys" >>"$_pfx/version"
 ;; ### pipetoys */
 
-tcc)
-;; ### tcc */
-
-minised)
-;; ### minised */
-
-wol)
-;; ### wol */
-
-pixelserv)
-;; ### pixelserv */
-
 pax-utils)	# dumpelf, lddtree #
 cd "$_tmp/pax-utils-src"
 make CC="$CC" CFLAGS="$CFLAGS" USE_CAP=no USE_PYTHON=no PREFIX=${_pfx} strip install
@@ -662,6 +654,93 @@ make CC="$CC" CFLAGS="$CFLAGS" USE_CAP=no USE_PYTHON=no PREFIX=${_pfx} strip ins
 pax_ver=$(wget -qO- 'http://sources.gentoo.org/cgi-bin/viewvc.cgi/gentoo-x86/app-misc/pax-utils'|sed -n 's@.*ils-\([0-9.]*\).eb.*@\1@p'|sort -urV|head -n1)
 echo "pax-utils ${pax_ver}-cvs" >>"$_pfx/version"
 ;; ### pax-utils */
+
+wol)
+;; ### wol */
+
+pixelserv)
+;; ### pixelserv */
+
+hexedit)
+;; ### hexedit */
+
+atop)
+;; ### atop */
+
+netcat)
+;; ### netcat */
+
+ncdu)
+;; ### ncdu */
+
+mdocml)
+;; ### mdocml */
+
+tcc)
+;; ### tcc */
+
+minised)
+;; ### minised */
+
+tar)
+;; ### tar */
+
+gzip)
+;; ### gzip */
+
+pigz)
+;; ### pigz */
+
+bison)
+;; ### bison */
+
+cryptsetup)
+;; ### cryptsetup */
+
+e2fsprogs)
+;; ### e2fsprogs */
+
+ethtool)
+;; ### ethtool */
+
+file)
+;; ### file */
+
+findutils)
+;; ### findutils */
+
+gawk)
+;; ### gawk */
+
+hexedit)
+;; ### hexedit */
+
+libpng)
+;; ### libpng */
+
+icoutils)
+;; ### icoutils */
+
+kmod)
+;; ### kmod */
+
+sed)
+;; ### sed */
+
+wget)
+;; ### wget */
+
+curl)
+;; ### curl */
+
+md5deep)
+;; ### md5deep */
+
+nbwmon)
+;; ### nbwmon */
+
+lz4)
+;; ### lz4 */
 
 
 
