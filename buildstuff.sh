@@ -141,10 +141,7 @@ function download_source() {
 	zlib)		url="git://github.com/madler/zlib.git" ;;
 
 	## there's always a few awkward ones...
-	bc) 		wget -nv ftp://alpha.gnu.org/gnu/bc/bc-1.06.95.tar.bz2 -O-|tar jxf - -C "$_tmp" && mv "$_tmp"/${1}-* "$_tmp"/${1}-src ;;
-	cpuid) 		wget -nv http://etallen.com/${1}/$(wget -qO- "http://etallen.com/$1/?C=M;O=D;F=1;P=$1*src*"|grep -om1 "$1.*gz") -O-|tar zxf - -C "$_tmp" && mv "$_tmp"/${1}-* "$_tmp"/${1}-src ;;
 #	distcc) 	svn co -q http://distcc.googlecode.com/svn/trunk/ "$_tmp/distcc-src" ;;
-	less)		wget -nv http://www.greenwoodsoftware.com/less/$(wget http://www.greenwoodsoftware.com/less/download.html -qO-|grep -om1 'less-[0-9]*\.tar\.gz') -O-|tar zxf - -C "$_tmp" && mv "$_tmp"/${1}-* "$_tmp"/${1}-src ;;
 #	mdocml)		wget -nv http://mdocml.bsd.lv/snapshots/mdocml.tar.gz -O-|tar zxf - -C "$_tmp" && mv "$_tmp"/${1}-* "$_tmp"/${1}-src ;;
 #	minised)	svn co http://svn.exactcode.de/minised/trunk/ "$_tmp/minised-src" ;;
 	nano) 		svn co svn://svn.savannah.gnu.org/nano/trunk/nano "$_tmp/nano-src" ;;
@@ -155,6 +152,12 @@ function download_source() {
 	popt) 		(cd "$_tmp" && cvs -qd :pserver:anonymous@rpm5.org:/cvs co -d popt-src popt) ;;
 	tree)		wget -nv http://mama.indstate.edu/users/ice/tree/src/tree-1.7.0.tgz -O-|tar zxf - -C "$_tmp" && mv "$_tmp"/${1}-* "$_tmp"/${1}-src ;;
 	wol)	 	svn co -q svn://svn.code.sf.net/p/wake-on-lan/code/trunk "$_tmp/wol-src" ;;
+
+	## and a few that I can't find a source repo or daily snapshot of...
+	atop)		wget -nv http://www.atoptool.nl/download/$(wget -qO- http://atoptool.nl/downloadatop.php|grep -om1 'atop-[0-9.-]*tar\.gz'|head -n1) -O-|tar zxf - -C "$_tmp" && mv "$_tmp"/${1}-* "$_tmp"/${1}-src ;;
+	bc) 		wget -nv ftp://alpha.gnu.org/gnu/bc/bc-1.06.95.tar.bz2 -O-|tar jxf - -C "$_tmp" && mv "$_tmp"/${1}-* "$_tmp"/${1}-src ;;
+	cpuid) 		wget -nv http://etallen.com/${1}/$(wget -qO- "http://etallen.com/$1/?C=M;O=D;F=1;P=$1*src*"|grep -om1 "$1.*gz") -O-|tar zxf - -C "$_tmp" && mv "$_tmp"/${1}-* "$_tmp"/${1}-src ;;
+	less)		wget -nv http://greenwoodsoftware.com/less/$(wget http://greenwoodsoftware.com/less/download.html -qO-|grep -om1 'less-[0-9]*\.tar\.gz') -O-|tar zxf - -C "$_tmp" && mv "$_tmp"/${1}-* "$_tmp"/${1}-src ;;
 
 	## and then there's this! wtf? also, requiring unzip, to unzip unzip is stupid.
 #	unzip)	(wget http://antinode.info/ftp/info-zip/$(wget -qO- 'http://antinode.info/ftp/info-zip/?C=M;O=D;P=unzip*.zip'|grep -o 'unzip[0-9a-zA-Z_.-]*\.zip'|head -n1) -O "$_tmp/unzip.zip"
@@ -188,6 +191,10 @@ else
     msg5 'Downloading GNUlib. Consider setting $GNULIB_SRCDIR for faster builds'
     download_source gnulib
     export GNULIB_SRCDIR="${_tmp}/gnulib-src"
+fi
+
+if [[ -e "$_pfx/bin/pkg-config" ]]; then
+    export PKG_CONFIG="$_pfx/bin/pkg-config"
 fi
 
 for inst in $@; do
@@ -656,22 +663,44 @@ echo "pax-utils ${pax_ver}-cvs" >>"$_pfx/version"
 ;; ### pax-utils */
 
 wol)
+cd "$_tmp/wol-src"
+./autogen.sh
+sed -i 's/__GLIBC.*/0/g' lib/getline.h
+./configure --prefix=${_pfx} --disable-{nls,rpath}
+sed -i '/ETHER/s/0/1/g;/STRUCT_ETHER_ADDR_OCTET/d' config.h
+make && make install-strip
+awk '/define VER/ {gsub(/"/,"",$3); print "wol "$3"'$(svnversion)'"}' config.h >>"$_pfx/version"
 ;; ### wol */
 
-pixelserv)
-;; ### pixelserv */
-
-hexedit)
-;; ### hexedit */
-
 atop)
+cd "$_tmp/atop-src"
+sed -i '/O2/d; s/lncurses/&w/' Makefile
+find . -name "show*.c" -exec sed -i 's@termio.h@termios.h@g' '{}' \;
+make BINDIR=/bin SBINDIR=/bin CC="$CC -s" CFLAGS="$CFLAGS" DESTDIR="$_pfx" atop
+cp -v atop "$_pfx/bin/"
+cp -v man/atop.1 "$_pfx/share/man/man1/"
+cp -v man/atoprc.5 "$_pfx/share/man/man5/"
+awk '/ATOPVER/ {gsub(/"/,"",$3); print "atop "$3}' version.h >>"$_pfx/version"
 ;; ### atop */
 
 netcat)
+cd "$_tmp/wol-src"
+autoreconf -i
+./configure --prefix=${_pfx} --disable-{nls,rpath,debug}
+make && make install-strip
+awk '/define VER/ {gsub(/"/,"",$3); print "netcat "$3"'$(svnversion)'"}' config.h >>"$_pfx/version"
 ;; ### netcat */
 
 ncdu)
+cd "$_tmp/ncdu-src"
+autoreconf -fi
+./configure --prefix=${_pfx}
+make && make install-strip
+git_pkg_ver "ncdu" >>"$_pfx/version"
 ;; ### ncdu */
+
+hexedit)
+;; ### hexedit */
 
 mdocml)
 ;; ### mdocml */
@@ -741,6 +770,12 @@ nbwmon)
 
 lz4)
 ;; ### lz4 */
+
+dhcpcd)
+;; ### dhcpcd */
+
+pixelserv)
+;; ### pixelserv */
 
 
 
