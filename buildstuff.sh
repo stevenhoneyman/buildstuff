@@ -93,8 +93,8 @@ function download_source() {
 	dash)		url="git://git.kernel.org/pub/scm/utils/dash/dash.git" ;;
 	diffutils)	url="git://git.sv.gnu.org/diffutils.git" ;;
 	dropbear)	url="git://github.com/mkj/dropbear.git" ;;
-#	e2fsprogs)	url="git://git.kernel.org/pub/scm/fs/ext2/e2fsprogs.git" ;;
-#	ethtool)	url="git://git.kernel.org/pub/scm/network/ethtool/ethtool.git" ;;
+	e2fsprogs)	url="git://git.kernel.org/pub/scm/fs/ext2/e2fsprogs.git" ;;
+	ethtool)	url="git://git.kernel.org/pub/scm/network/ethtool/ethtool.git" ;;
 #	eudev)		url="git://github.com/gentoo/eudev.git" ;;
 #	file)		url="git://github.com/file/file.git" ;;
 #	findutils)	url="git://git.sv.gnu.org/findutils.git" ;;
@@ -108,7 +108,7 @@ function download_source() {
 	iproute2)	url="git://git.kernel.org/pub/scm/linux/kernel/git/shemminger/iproute2.git" ;;
 	iptables)	url="git://git.netfilter.org/iptables.git" ;;
 	iw)		url="git://git.kernel.org/pub/scm/linux/kernel/git/jberg/iw.git" ;;
-#	kmod)		url="git://git.kernel.org/pub/scm/utils/kernel/kmod/kmod.git" ;;
+	kmod)		url="git://git.kernel.org/pub/scm/utils/kernel/kmod/kmod.git" ;;
 	lbzip2)		url="git://github.com/kjn/lbzip2.git" ;;
 	libnl-tiny)	url="git://github.com/sabotage-linux/libnl-tiny.git" ;;
 #	libpng)		url="git://git.code.sf.net/p/libpng/code" ;;
@@ -123,7 +123,7 @@ function download_source() {
 	openssl)	url="git://git.openssl.org/openssl.git" ;;
 	patch)		url="git://git.sv.gnu.org/patch.git" ;;
 	patchelf)	url="git://github.com/NixOS/patchelf.git" ;;
-#	pigz)		url="git://github.com/madler/pigz.git" ;;
+	pigz)		url="git://github.com/madler/pigz.git" ;;
 	pipetoys)	url-"git://github.com/AndyA/pipetoys.git" ;;
 #	pixelserv)	url="git://github.com/h0tw1r3/pixelserv.git" ;;
 	pkgconf)	url="git://github.com/pkgconf/pkgconf.git" ;;
@@ -168,7 +168,8 @@ function download_source() {
   esac
 
   [[ "$url" == "no" ]] && : || \
-	git clone --single-branch --depth=${_gitdepth} $url "${_tmp}/${1}-src"
+	git clone --single-branch --depth=${_gitdepth} $url "${_tmp}/${1}-src" || \
+	git clone --single-branch $url "${_tmp}/${1}-src"
 }
 export -f download_source
 
@@ -197,6 +198,10 @@ fi
 if [[ -e "$_pfx/bin/pkg-config" ]]; then
     export PKG_CONFIG="$_pfx/bin/pkg-config"
 fi
+
+# TODO: if !gcc; then
+export STATIC_OPTS="--disable-shared --enable-static"
+
 
 for inst in $@; do
 get_source $inst
@@ -539,7 +544,7 @@ xz)
 cd "$_tmp/xz-src"
 ./autogen.sh 2>/dev/null
 ./configure --prefix=${_pfx} --with-pic \
-    --disable-{nls,rpath,symbol-versions,debug,werror,lzmadec,lzmainfo,lzma-links,scripts,doc}
+    --disable-{nls,rpath,symbol-versions,debug,werror,lzmadec,lzmainfo,lzma-links,scripts,doc} ${STATIC_OPTS}
 make && make install-strip
 git_pkg_ver "xz" >>"$_pfx/version"
 ;; ### xz */
@@ -738,7 +743,38 @@ git_pkg_ver "gzip" >>"$_pfx/version"
 ;; ### gzip */
 
 pigz)
+cd "$_tmp/pigz-src"
+make pigz CC="$CC -s" CFLAGS="$CFLAGS"
+cp -v pigz "$_pfx/bin/"
+cp -v pigz.1 "$_pfx/share/man/man1/"
+echo "pigz $(git describe --tags)" >>"$_pfx/version"
 ;; ### pigz */
+
+kmod)
+cd "$_tmp/kmod-src"
+autoreconf -fi
+./configure --prefix=${_pfx} --disable-{debug,python,maintainer-mode} --enable-{tools,manpages} --with-{pic,xz,zlib}
+make && make install-strip
+git_pkg_ver "kmod" >>"$_pfx/version"
+;; ### kmod */
+
+e2fsprogs)
+cd "$_tmp/e2fsprogs-src"
+patch -p1 -i ${_breqs}/e2fsprogs-magic_t-fix.patch
+./configure --prefix=${_pfx} --sbindir=${_pfx}/bin --enable-symlink-{build,install} --enable-relative-symlinks \
+    --disable-{nls,rpath,fsck,uuidd,libuuid,libblkid,tls,e2initrd-helper}
+make && make install-strip
+git_pkg_ver "e2fsprogs" >>"$_pfx/version"
+;; ### e2fsprogs */
+
+ethtool)
+cd "$_tmp/ethtool-src"
+./autogen.sh
+sed -i 's/__uint/uint/g; s/__int/int/g' internal.h
+./configure --prefix=${_pfx} --sbindir=${_pfx}/bin
+make && make install-strip
+git_pkg_ver "ethtool" >>"$_pfx/version"
+;; ### ethtool */
 
 hexedit)
 ;; ### hexedit */
@@ -758,12 +794,6 @@ bison)
 cryptsetup)
 ;; ### cryptsetup */
 
-e2fsprogs)
-;; ### e2fsprogs */
-
-ethtool)
-;; ### ethtool */
-
 file)
 ;; ### file */
 
@@ -775,9 +805,6 @@ libpng)
 
 icoutils)
 ;; ### icoutils */
-
-kmod)
-;; ### kmod */
 
 wget)
 ;; ### wget */
