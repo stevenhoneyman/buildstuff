@@ -99,9 +99,9 @@ function download_source() {
 #	file)		url="git://github.com/file/file.git" ;;
 #	findutils)	url="git://git.sv.gnu.org/findutils.git" ;;
 	flex)		url="git://git.code.sf.net/p/flex/flex" ;;
-#	gawk)		url="git://git.sv.gnu.org/gawk.git" ;;
+	gawk)		url="git://git.sv.gnu.org/gawk.git" ;;
 	gnulib)		url="git://git.sv.gnu.org/gnulib.git" ;;
-#	gzip)		url="git://git.sv.gnu.org/gzip.git" ;;
+	gzip)		url="git://git.sv.gnu.org/gzip.git" ;;
 #	hexedit)	url="git://github.com/pixel/hexedit.git" ;;
 	htop)		url="git://github.com/hishamhm/htop.git" ;;
 #	icoutils)	url="git://git.sv.gnu.org/icoutils.git" ;;
@@ -125,13 +125,14 @@ function download_source() {
 	patchelf)	url="git://github.com/NixOS/patchelf.git" ;;
 #	pigz)		url="git://github.com/madler/pigz.git" ;;
 	pipetoys)	url-"git://github.com/AndyA/pipetoys.git" ;;
+#	pixelserv)	url="git://github.com/h0tw1r3/pixelserv.git" ;;
 	pkgconf)	url="git://github.com/pkgconf/pkgconf.git" ;;
 	readline)	url="git://git.sv.gnu.org/readline.git" ;;
 	screen)		url="git://git.sv.gnu.org/screen.git" ;;
-#	sed)		url="git://git.sv.gnu.org/sed.git" ;;
+	sed)		url="git://git.sv.gnu.org/sed.git" ;;
 	sstrip)		url="git://github.com/BR903/ELFkickers.git" ;;
 	strace)		url="git://git.code.sf.net/p/strace/code" ;;
-#	tar)		url="git://git.sv.gnu.org/tar.git" ;;
+	tar)		url="git://git.sv.gnu.org/tar.git" ;;
 #	tcc)		url="git://repo.or.cz/tinycc.git" ;;
 	util-linux)	url="git://git.kernel.org/pub/scm/utils/util-linux/util-linux.git" ;;
 #	wget)		url="git://git.sv.gnu.org/wget.git" ;;
@@ -203,7 +204,7 @@ case $inst in
 
 musl)
 cd "$_tmp/musl-src"
-CC=/bin/gcc CFLAGS="-Os" ./configure --prefix="$_pfx" --disable-shared --disable-debug
+CC=/bin/gcc CFLAGS="-Os -pipe" LDFLAGS="" ./configure --prefix="$_pfx" --disable-shared --disable-debug
 make && make install || exit 3
 echo "musl $(<VERSION)-$(git log -1 --format=%cd.%h --date=short|tr -d -)" >>"$_pfx/version"
 #if [[ -e "/usr/lib/ccache/bin/musl-gcc" ]]; then		# TODO: fix (ccache: error: Could not find compiler "musl-gcc" in PATH)
@@ -699,6 +700,46 @@ make && make install-strip
 git_pkg_ver "ncdu" >>"$_pfx/version"
 ;; ### ncdu */
 
+sed)
+cd "$_tmp/sed-src"
+./bootstrap --skip-po
+./configure --prefix=${_pfx} --disable-{nls,rpath,i18n}
+make && make install-strip
+git_pkg_ver "sed" >>"$_pfx/version"
+;; ### sed */
+
+gawk)
+cd "$_tmp/gawk-src"
+./bootstrap.sh
+sed -i 's/lncurses/&w/g' configure
+./configure --prefix=${_pfx} --disable-{nls,rpath,extensions}
+make && strip -s gawk
+cp -v gawk "$_pfx/bin/"
+cp -v doc/gawk.1 "$_pfx/share/man/man1/"
+git_pkg_ver "gawk" >>"$_pfx/version"
+;; ### gawk */
+
+tar)
+cd "$_tmp/tar-src"
+./bootstrap --skip-po
+sed -i 's/-Werror//g' configure
+./configure --prefix=${_pfx} --disable-{nls,rpath} --with-rmt=/bin/rmt
+make && make install-strip
+git_pkg_ver "tar" >>"$_pfx/version"
+;; ### tar */
+
+gzip)
+cd "$_tmp/gzip-src"
+./bootstrap --skip-po
+sed -i 's/-Werror//g' configure
+./configure --prefix=${_pfx}
+make && make install-strip
+git_pkg_ver "gzip" >>"$_pfx/version"
+;; ### gzip */
+
+pigz)
+;; ### pigz */
+
 hexedit)
 ;; ### hexedit */
 
@@ -710,15 +751,6 @@ tcc)
 
 minised)
 ;; ### minised */
-
-tar)
-;; ### tar */
-
-gzip)
-;; ### gzip */
-
-pigz)
-;; ### pigz */
 
 bison)
 ;; ### bison */
@@ -738,12 +770,6 @@ file)
 findutils)
 ;; ### findutils */
 
-gawk)
-;; ### gawk */
-
-hexedit)
-;; ### hexedit */
-
 libpng)
 ;; ### libpng */
 
@@ -752,9 +778,6 @@ icoutils)
 
 kmod)
 ;; ### kmod */
-
-sed)
-;; ### sed */
 
 wget)
 ;; ### wget */
