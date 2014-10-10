@@ -159,6 +159,7 @@ function download_source() {
 	bc) 		wget -nv ftp://alpha.gnu.org/gnu/bc/bc-1.06.95.tar.bz2 -O-|tar jxf - -C "$_tmp" && mv "$_tmp"/${1}-* "$_tmp"/${1}-src ;;
 	cpuid) 		wget -nv http://etallen.com/${1}/$(wget -qO- "http://etallen.com/$1/?C=M;O=D;F=1;P=$1*src*"|grep -om1 "$1.*gz") -O-|tar zxf - -C "$_tmp" && mv "$_tmp"/${1}-* "$_tmp"/${1}-src ;;
 	less)		wget -nv http://greenwoodsoftware.com/less/$(wget http://greenwoodsoftware.com/less/download.html -qO-|grep -om1 'less-[0-9]*\.tar\.gz') -O-|tar zxf - -C "$_tmp" && mv "$_tmp"/${1}-* "$_tmp"/${1}-src ;;
+	libedit)	wget -nv http://thrysoee.dk/editline/$(wget http://thrysoee.dk/editline/ -qO-|grep -om1 'libedit[0-9.-]*\.tar\.gz'|head -n1) -O-|tar zxf - -C "$_tmp" && mv "$_tmp"/${1}-* "$_tmp"/${1}-src ;;
 
 	## and then there's this! wtf? also, requiring unzip, to unzip unzip is stupid.
 #	unzip)	(wget http://antinode.info/ftp/info-zip/$(wget -qO- 'http://antinode.info/ftp/info-zip/?C=M;O=D;P=unzip*.zip'|grep -o 'unzip[0-9a-zA-Z_.-]*\.zip'|head -n1) -O "$_tmp/unzip.zip"
