@@ -235,6 +235,7 @@ if [ -d "$_bbext" ]; then
 fi
 cp -v "$_breqs/busybox.config" "$_tmp/busybox-src/.config"
 patch -p1 -i "$_breqs/busybox-1.22-dmesg-color.patch"
+patch -p1 -i "$_breqs/busybox-1.22-httpd-no-cache.patch"
 patch -p1 -i "$_breqs/busybox-1.22-ifplugd-musl-fix.patch"
 [ -z "$CONFIG" ] || make gconfig
 cp .config "$_pfx"/busybox.config
@@ -610,6 +611,14 @@ strip -s wpa_{cli,passphrase,supplicant} && make BINDIR=${_pfx}/bin install
 install -Dm600 wpa_supplicant.conf "${_pfx}"/etc/wpa_supplicant.conf
 git_pkg_ver "wpa_supplicant" >>"$_pfx/version"
 ;; ### wpa_supplicant */
+
+libedit)
+cd "$_tmp/libedit-src"
+sed -i 's|-lcurses|-lncursesw|' configure
+./configure --prefix=${_pfx} --disable-examples
+make && make LN_S=true install-strip
+echo $(awk '/PACKAGE_VERSION/ {gsub(/"/,"",$3); print "libedit "$3}' config.h)-$(grep "GE.=" Makefile|cut -d- -f2) >>"$_pfx/version"
+;; ### libedit */
 
 flex)
 cd "$_tmp/flex-src"
