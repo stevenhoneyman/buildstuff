@@ -630,10 +630,10 @@ make -C src install-binPROGRAMS install-includeHEADERS install-libLTLIBRARIES
 git_pkg_ver "flex" >>"$_pfx/version"
 ;; ### flex */
 
-bc)					# TODO: fails to use readline. fix and/or try libedit
+bc)					#+# requires: libedit, ncurses
 cd "$_tmp/bc-src"
-./configure --prefix=${_pfx}
-make && strip -s bc/bc && cp -v bc/bc "$_pfx/bin/"
+./configure --prefix=${_pfx} CFLAGS="$CFLAGS -DLIBEDIT"
+make LIBL="-ledit -lncursesw" && strip -s bc/bc && cp -v bc/bc "$_pfx/bin/"
 echo "bc 1.06.95" >>"$_pfx/version"
 ;; ### bc */
 
