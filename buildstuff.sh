@@ -88,7 +88,7 @@ function download_source() {
 #	bison)		url="git://git.sv.gnu.org/bison.git" ;;
 	coreutils)	url="git://git.sv.gnu.org/coreutils.git" ;;
 #	cryptsetup)	url="git://git.kernel.org/pub/scm/utils/cryptsetup/cryptsetup.git" ;;
-#	curl)		url="git://github.com/bagder/curl.git" ;;
+	curl)		url="git://github.com/bagder/curl.git" ;;
 	cv)		url="git://github.com/Xfennec/cv.git" ;;
 	dash)		url="git://git.kernel.org/pub/scm/utils/dash/dash.git" ;;
 	diffutils)	url="git://git.sv.gnu.org/diffutils.git" ;;
@@ -114,7 +114,7 @@ function download_source() {
 #	libpng)		url="git://git.code.sf.net/p/libpng/code" ;;
 	lz4)		url="git://github.com/Cyan4973/lz4.git" ;;
 	make)		url="git://git.sv.gnu.org/make.git" ;;
-	md5deep)	url="git://github.com/jessek/hashdeep.git" ;;
+#	md5deep)	url="git://github.com/jessek/hashdeep.git" ;;
 	mksh)		url="git://github.com/MirBSD/mksh.git" ;;
 	multitail)	url="git://github.com/flok99/multitail.git" ;;
 	nasm)		url="git://repo.or.cz/nasm.git" ;;
@@ -135,7 +135,7 @@ function download_source() {
 	tar)		url="git://git.sv.gnu.org/tar.git" ;;
 #	tcc)		url="git://repo.or.cz/tinycc.git" ;;
 	util-linux)	url="git://git.kernel.org/pub/scm/utils/util-linux/util-linux.git" ;;
-#	wget)		url="git://git.sv.gnu.org/wget.git" ;;
+	wget)		url="git://git.sv.gnu.org/wget.git" ;;
 	wpa_supplicant)	url="git://w1.fi/hostap.git" ;;
 	xz)		url="http://git.tukaani.org/xz.git" ;;
 	yasm)		url="git://github.com/yasm/yasm.git" ;;
@@ -825,10 +825,27 @@ libpng)
 icoutils)
 ;; ### icoutils */
 
-wget)
+wget)					#+# requires: openssl, zlib
+cd "$_tmp/wget-src"
+./bootstrap --skip-po
+./configure --prefix=${_pfx} --sysconfdir=/etc --disable-{nls,rpath,debug,ipv6,ntlm} --with-ssl=openssl
+make && strip -s src/wget
+cp -v src/wget "$_pfx/bin/"
+cp -v doc/wget.1 "$_pfx/share/man/man1/"
+cp -v doc/sample.wgetrc "$_pfx/etc/wgetrc"
+git_pkg_ver "wget" >>"$_pfx/version"
 ;; ### wget */
 
 curl)
+cd "$_tmp/curl-src"
+./buildconf
+./configure --prefix=${_pfx} --sysconfdir=/etc --with-pic --enable-threaded-resolver \
+    --disable-{debug,werror,curldebug,ares,rtsp,dict,telnet,pop3,imap,smtp,gopher,manual,ipv6,ntlm-wb}
+sed -i '/INSTALL.*man3dir/d' docs/libcurl/Makefile
+sed -i '/INSTALL.*man3dir/d' docs/libcurl/opts/Makefile
+make
+make install-strip || true 	# sed hackery might cause this to "fail"
+git_pkg_ver "curl" >>"$_pfx/version"
 ;; ### curl */
 
 md5deep)			# grrr, C++
