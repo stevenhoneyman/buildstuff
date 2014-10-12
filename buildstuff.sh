@@ -96,8 +96,8 @@ function download_source() {
 	e2fsprogs)	url="git://git.kernel.org/pub/scm/fs/ext2/e2fsprogs.git" ;;
 	ethtool)	url="git://git.kernel.org/pub/scm/network/ethtool/ethtool.git" ;;
 #	eudev)		url="git://github.com/gentoo/eudev.git" ;;
-#	file)		url="git://github.com/file/file.git" ;;
-#	findutils)	url="git://git.sv.gnu.org/findutils.git" ;;
+	file)		url="git://github.com/file/file.git" ;;
+	findutils)	url="git://git.sv.gnu.org/findutils.git" ;;
 	flex)		url="git://git.code.sf.net/p/flex/flex" ;;
 	gawk)		url="git://git.sv.gnu.org/gawk.git" ;;
 	gnulib)		url="git://git.sv.gnu.org/gnulib.git" ;;
@@ -114,7 +114,7 @@ function download_source() {
 #	libpng)		url="git://git.code.sf.net/p/libpng/code" ;;
 	lz4)		url="git://github.com/Cyan4973/lz4.git" ;;
 	make)		url="git://git.sv.gnu.org/make.git" ;;
-#	md5deep)	url="git://github.com/jessek/hashdeep.git" ;;
+	md5deep)	url="git://github.com/jessek/hashdeep.git" ;;
 	mksh)		url="git://github.com/MirBSD/mksh.git" ;;
 	multitail)	url="git://github.com/flok99/multitail.git" ;;
 	nasm)		url="git://repo.or.cz/nasm.git" ;;
@@ -142,17 +142,17 @@ function download_source() {
 	zlib)		url="git://github.com/madler/zlib.git" ;;
 
 	## there's always a few awkward ones...
-#	distcc) 	svn co -q http://distcc.googlecode.com/svn/trunk/ "$_tmp/distcc-src" ;;
-#	mdocml)		wget -nv http://mdocml.bsd.lv/snapshots/mdocml.tar.gz -O-|tar zxf - -C "$_tmp" && mv "$_tmp"/${1}-* "$_tmp"/${1}-src ;;
+#	distcc) 	svn co http://distcc.googlecode.com/svn/trunk/ "$_tmp/distcc-src" ;;
+#	mdocml)		(cd "$_tmp" && CVS_RSH=ssh cvs -d :ext:anoncvs@mdocml.bsd.lv:/cvs co mdocml-src) ;;
 #	minised)	svn co http://svn.exactcode.de/minised/trunk/ "$_tmp/minised-src" ;;
 	nano) 		svn co svn://svn.savannah.gnu.org/nano/trunk/nano "$_tmp/nano-src" ;;
 	ncurses)	wget -nv ftp://invisible-island.net/ncurses/current/${_ncurses:-ncurses.tar.gz} -O-| tar zxf - -C "$_tmp" && mv "$_tmp"/${1}-* "$_tmp"/${1}-src ;;
-	netcat) 	svn co -q svn://svn.code.sf.net/p/netcat/code/trunk "$_tmp/netcat-src" ;;
-	pax-utils) 	(cd "$_tmp" && cvs -qd :pserver:anonymous@anoncvs.gentoo.org:/var/cvsroot co -d ${1}-src gentoo-projects/${1}) ;;
+	netcat) 	svn co svn://svn.code.sf.net/p/netcat/code/trunk "$_tmp/netcat-src" ;;
+	pax-utils) 	(cd "$_tmp" && cvs -d :pserver:anonymous@anoncvs.gentoo.org:/var/cvsroot co -d ${1}-src gentoo-projects/${1}) ;;
 	pcre)		svn co svn://vcs.exim.org/pcre/code/trunk "$_tmp/pcre-src" ;;
-	popt) 		(cd "$_tmp" && cvs -qd :pserver:anonymous@rpm5.org:/cvs co -d popt-src popt) ;;
+	popt) 		(cd "$_tmp" && cvs -d :pserver:anonymous@rpm5.org:/cvs co -d popt-src popt) ;;
 	tree)		wget -nv http://mama.indstate.edu/users/ice/tree/src/tree-1.7.0.tgz -O-|tar zxf - -C "$_tmp" && mv "$_tmp"/${1}-* "$_tmp"/${1}-src ;;
-	wol)	 	svn co -q svn://svn.code.sf.net/p/wake-on-lan/code/trunk "$_tmp/wol-src" ;;
+	wol)	 	svn co svn://svn.code.sf.net/p/wake-on-lan/code/trunk "$_tmp/wol-src" ;;
 
 	## and a few that I can't find a source repo or daily snapshot of...
 	atop)		wget -nv http://www.atoptool.nl/download/$(wget -qO- http://atoptool.nl/downloadatop.php|grep -om1 'atop-[0-9.-]*tar\.gz'|head -n1) -O-|tar zxf - -C "$_tmp" && mv "$_tmp"/${1}-* "$_tmp"/${1}-src ;;
@@ -173,9 +173,6 @@ function download_source() {
 	git clone --single-branch $url "${_tmp}/${1}-src"
 }
 export -f download_source
-
-#for src in musl musl-kernel-headers busybox acl attr bash bc coreutils cpuid cryptsetup cv dash diffutils distcc dropbear e2fsprogs ethtool file findutils gawk gzip hexedit htop icoutils iptables kmod libnl-tiny libpng make mksh multitail nano nasm ncurses netcat openssl patch pax-utils pkgconf popt readline screen sed sstrip strace tar tcc tree util-linux wget yasm zlib ; do
-
 
 function get_source() {
 	local src=$1
@@ -213,12 +210,12 @@ cd "$_tmp/musl-src"
 CC=/bin/gcc CFLAGS="-Os -pipe" LDFLAGS="" ./configure --prefix="$_pfx" --disable-shared --disable-debug
 make && make install || exit 3
 echo "musl $(<VERSION)-$(git log -1 --format=%cd.%h --date=short|tr -d -)" >>"$_pfx/version"
-#if [[ -e "/usr/lib/ccache/bin/musl-gcc" ]]; then		# TODO: fix (ccache: error: Could not find compiler "musl-gcc" in PATH)
-#    msg2 'ccache symlink found, using that as $CC'
-#    export CC="/usr/lib/ccache/bin/musl-gcc"
-#else
+if [[ -x "/usr/bin/ccache" ]]; then
+    msg2 'ccache found, using that with $CC'
+    export CC="ccache $_pfx/bin/musl-gcc"
+else
     export CC="$_pfx/bin/musl-gcc"
-#fi
+fi
 cd "$_tmp/musl-kernel-headers-src"
 make ARCH=x86_64 prefix="$_pfx" install
 echo "kernel-headers $(git describe --tags|cut -d'-' -f'1,2').$(git log -1 --format=%cd.%h --date=short|tr -d -)" >>"$_pfx/version"
@@ -805,9 +802,21 @@ cryptsetup)
 ;; ### cryptsetup */
 
 file)
+cd "$_tmp/file-src"
+autoreconf -fi
+./configure --prefix=${_pfx} --enable-static --with-pic
+make && make install-strip
+git_pkg_ver "file" >>"$_pfx/version"
 ;; ### file */
 
 findutils)
+cd "$_tmp/findutils-src"
+./import-gnulib.sh
+./configure --prefix=${_pfx} --disable-{nls,rpath,debug} PYTHON=false
+make
+make -C find install-strip
+make -C xargs install-strip
+git_pkg_ver "findutils" >>"$_pfx/version"
 ;; ### findutils */
 
 libpng)
@@ -822,7 +831,12 @@ wget)
 curl)
 ;; ### curl */
 
-md5deep)
+md5deep)			# grrr, C++
+#cd "$_tmp/md5deep-src"
+#./bootstrap.sh
+#./configure --prefix=${_pfx}
+#make && make install-strip
+#git_pkg_ver "md5deep" >>"$_pfx/version"
 ;; ### md5deep */
 
 nbwmon)
