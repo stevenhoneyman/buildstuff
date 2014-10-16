@@ -85,7 +85,7 @@ function download_source() {
 	acl)		url="git://git.sv.gnu.org/acl.git" ;;
 	attr)		url="git://git.sv.gnu.org/attr.git" ;;
 	bash)		url="git://git.sv.gnu.org/bash.git" ;;
-#	bison)		url="git://git.sv.gnu.org/bison.git" ;;
+	bison)		url="git://git.sv.gnu.org/bison.git" ;;
 	coreutils)	url="git://git.sv.gnu.org/coreutils.git" ;;
 #	cryptsetup)	url="git://git.kernel.org/pub/scm/utils/cryptsetup/cryptsetup.git" ;;
 	curl)		url="git://github.com/bagder/curl.git" ;;
@@ -143,7 +143,7 @@ function download_source() {
 
 	## there's always a few awkward ones...
 #	distcc) 	svn co http://distcc.googlecode.com/svn/trunk/ "$_tmp/distcc-src" ;;
-#	mdocml)		(cd "$_tmp" && CVS_RSH=ssh cvs -d :ext:anoncvs@mdocml.bsd.lv:/cvs co mdocml-src) ;;
+	mdocml)		(cd "$_tmp" && CVS_RSH=ssh cvs -d :ext:anoncvs@mdocml.bsd.lv:/cvs co mdocml-src) ;;
 #	minised)	svn co http://svn.exactcode.de/minised/trunk/ "$_tmp/minised-src" ;;
 	nano) 		svn co svn://svn.savannah.gnu.org/nano/trunk/nano "$_tmp/nano-src" ;;
 	ncurses)	wget -nv ftp://invisible-island.net/ncurses/current/${_ncurses:-ncurses.tar.gz} -O-| tar zxf - -C "$_tmp" && mv "$_tmp"/${1}-* "$_tmp"/${1}-src ;;
@@ -216,6 +216,7 @@ if [[ -x "/usr/bin/ccache" ]]; then
 else
     export CC="$_pfx/bin/musl-gcc"
 fi
+get_source musl-kernel-headers
 cd "$_tmp/musl-kernel-headers-src"
 make ARCH=x86_64 prefix="$_pfx" install
 echo "kernel-headers $(git describe --tags|cut -d'-' -f'1,2').$(git log -1 --format=%cd.%h --date=short|tr -d -)" >>"$_pfx/version"
@@ -857,6 +858,10 @@ md5deep)			# grrr, C++
 ;; ### md5deep */
 
 nbwmon)
+cd "$_tmp/nbwmon-src"
+make CC="$CC -s" LDLIBS="-lncursesw"
+cp -v nbwmon "$_pfx/bin/"
+git_pkg_ver "nbwmon" >>"$_pfx/version"
 ;; ### nbwmon */
 
 lz4)
