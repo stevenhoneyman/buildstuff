@@ -159,6 +159,8 @@ function download_source() {
 	atop)		wget -nv http://www.atoptool.nl/download/$(wget -qO- http://atoptool.nl/downloadatop.php|grep -om1 'atop-[0-9.-]*tar\.gz'|head -n1) -O-|tar zxf - -C "$_tmp" && mv "$_tmp"/${1}-* "$_tmp"/${1}-src ;;
 	bc) 		wget -nv ftp://alpha.gnu.org/gnu/bc/bc-1.06.95.tar.bz2 -O-|tar jxf - -C "$_tmp" && mv "$_tmp"/${1}-* "$_tmp"/${1}-src ;;
 	cpuid) 		wget -nv http://etallen.com/${1}/$(wget -qO- "http://etallen.com/$1/?C=M;O=D;F=1;P=$1*src*"|grep -om1 "$1.*gz") -O-|tar zxf - -C "$_tmp" && mv "$_tmp"/${1}-* "$_tmp"/${1}-src ;;
+	dhcpcd)		wget -nv http://roy.marples.name/downloads/dhcpcd/$(wget http://roy.marples.name/downloads/dhcpcd/ -qO-|grep -o 'dhcpcd-[0-9.-]*tar\.bz2'|sort -ruV|head -n1) -O-|tar jxf - -C "$_tmp" && mv "$_tmp"/${1}-* "$_tmp"/${1}-src ;;
+	kwakd)		wget -nv https://kwakd.googlecode.com/files/kwakd-0.5.tar.gz -O-|tar zxf - -C "$_tmp" && mv "$_tmp"/${1}-* "$_tmp"/${1}-src ;;
 	less)		wget -nv http://greenwoodsoftware.com/less/$(wget http://greenwoodsoftware.com/less/download.html -qO-|grep -om1 'less-[0-9]*\.tar\.gz') -O-|tar zxf - -C "$_tmp" && mv "$_tmp"/${1}-* "$_tmp"/${1}-src ;;
 	libedit)	wget -nv http://thrysoee.dk/editline/$(wget http://thrysoee.dk/editline/ -qO-|grep -om1 'libedit[0-9.-]*\.tar\.gz'|head -n1) -O-|tar zxf - -C "$_tmp" && mv "$_tmp"/${1}-* "$_tmp"/${1}-src ;;
 
@@ -306,7 +308,7 @@ git_pkg_ver "make" >>"$_pfx/version"
 htop)
 cd "$_tmp/htop-src"
 ./autogen.sh
-./configure --prefix=${_pfx} --sysconfdir=/etc --disable-unicode
+./configure --prefix=${_pfx} --sysconfdir=/etc
 make && strip -s htop && cp htop "$_pfx/bin/"
 git_pkg_ver "htop" >>"$_pfx/version"
 ;; ### htop */
@@ -862,31 +864,52 @@ cp -v nbwmon "$_pfx/bin/"
 git_pkg_ver "nbwmon" >>"$_pfx/version"
 ;; ### nbwmon */
 
-mdocml)
-cd "$_tmp/mdocml-src"
-
-echo "mdocml" >>"$_pfx/version"
-;; ### mdocml */
-
 pixelserv)
+cd "$_tmp/pixelserv-src"
+$CC $CFLAGS $LDFLAGS -O2 -DDO_COUNT -DTEXT_REPLY -DREAD_FILE -DREAD_GIF -DNULLSERV_REPLIES -DSSL_RESP -o pixelserv pixelserv.c
+git_pkg_ver "pixelserv" >>"$_pfx/version"
 ;; ### pixelserv */
 
-cryptsetup)
-;; ### cryptsetup */
-
 minised)
+cd "$_tmp/minised-src"
+$CC $CFLAGS sedcomp.c sedexec.c $LDFLAGS -o minised
+cp -v minised "$_pfx/bin/"
+cp -v minised.1 "$_pfx/share/man/man1/"
+echo "minised $(grep -Eo '[0-9]+\.[0-9]+' README|tail -n1)-r$(svnversion)" >>"$_pfx/version"
 ;; ### minised */
 
 lz4)
+cd "$_tmp/lz4-src"
+sed '/SHARED/d' Makefile >Makefile.static
+make CC="$CC -s -fPIC" PREFIX="$_pfx" -f Makefile.static install
+git_pkg_ver "lz4" >>"$_pfx/version"
 ;; ### lz4 */
 
 dhcpcd)
+cd "$_tmp/dhcpcd-src"
+
+echo "dhcpcd" >>"$_pfx/version"
 ;; ### dhcpcd */
 
 kwakd)
+cd "$_tmp/kwakd-src"
+./confifure --prefix=${_pfx} --sysconfdir=/etc
+make && make install-strip
+echo "kwakd $(sed -n 's/^VERSION=\(.*\)$/\1/p' configure)" >>"$_pfx/version"
 ;; ### kwakd */
 
+mdocml)
+cd "$_tmp/mdocml-src"
+echo "OSNAME=Linux" 	 >configure.local
+echo "BUILD_DB=0" 	>>configure.local
+echo "PREFIX=${_pfx}" 	>>configure.local
+./configure
+make && make install
+awk '/define VER/ {gsub(/"/,"",$3); print "mdocml "$3"-cvs"}' config.h >>"$_pfx/version"
+;; ### mdocml */
 
+cryptsetup)
+;; ### cryptsetup */
 
 hexedit)
 ;; ### hexedit */
