@@ -79,8 +79,9 @@ function download_source() {
   local url="no"
   case $1 in
 	musl) 		url="git://git.musl-libc.org/musl" ;;
-	busybox)	url="git://git.busybox.net/busybox" ;;
 	*-headers)	url="git://github.com/sabotage-linux/kernel-headers.git" ;;
+	busybox)	url="git://github.com/stevenhoneyman/busybox.git" ;;
+			#url="git://git.busybox.net/busybox" ;;
 
 	acl)		url="git://git.sv.gnu.org/acl.git" ;;
 	attr)		url="git://git.sv.gnu.org/attr.git" ;;
@@ -125,7 +126,7 @@ function download_source() {
 	patchelf)	url="git://github.com/NixOS/patchelf.git" ;;
 	pigz)		url="git://github.com/madler/pigz.git" ;;
 	pipetoys)	url-"git://github.com/AndyA/pipetoys.git" ;;
-#	pixelserv)	url="git://github.com/h0tw1r3/pixelserv.git" ;;
+	pixelserv)	url="git://github.com/h0tw1r3/pixelserv.git" ;;
 	pkgconf)	url="git://github.com/pkgconf/pkgconf.git" ;;
 	readline)	url="git://git.sv.gnu.org/readline.git" ;;
 	screen)		url="git://git.sv.gnu.org/screen.git" ;;
@@ -143,8 +144,8 @@ function download_source() {
 
 	## there's always a few awkward ones...
 #	distcc) 	svn co http://distcc.googlecode.com/svn/trunk/ "$_tmp/distcc-src" ;;
-	mdocml)		(cd "$_tmp" && CVS_RSH=ssh cvs -d :ext:anoncvs@mdocml.bsd.lv:/cvs co mdocml-src) ;;
-#	minised)	svn co http://svn.exactcode.de/minised/trunk/ "$_tmp/minised-src" ;;
+	mdocml)		(cd "$_tmp" && CVS_RSH=ssh cvs -d :ext:anoncvs@mdocml.bsd.lv:/cvs co -d mdocml-src mdocml) ;;
+	minised)	svn co http://svn.exactcode.de/minised/trunk/ "$_tmp/minised-src" ;;
 	nano) 		svn co svn://svn.savannah.gnu.org/nano/trunk/nano "$_tmp/nano-src" ;;
 	ncurses)	wget -nv ftp://invisible-island.net/ncurses/current/${_ncurses:-ncurses.tar.gz} -O-| tar zxf - -C "$_tmp" && mv "$_tmp"/${1}-* "$_tmp"/${1}-src ;;
 	netcat) 	svn co svn://svn.code.sf.net/p/netcat/code/trunk "$_tmp/netcat-src" ;;
@@ -225,17 +226,21 @@ echo "kernel-headers $(git describe --tags|cut -d'-' -f'1,2').$(git log -1 --for
 
 busybox)
 cd "$_tmp/busybox-src"
-if [ -d "$_bbext" ]; then
-    cp -v "$_bbext/nproc/nproc.c" 	"coreutils/nproc.c"
-    cp -v "$_bbext/acpi/acpi.c" 	"miscutils/acpi.c"
-    cp -v "$_bbext/bin2c/bin2c.c" 	"miscutils/bin2c.c"
-    cp -v "$_bbext/uuidgen/uuidgen.c" 	"miscutils/uuidgen.c"
-    cp -v "$_bbext/nologin/nologin.c" 	"util-linux/nologin.c"
-fi
+#if [ -d "$_bbext" ]; then
+#    cp -v "$_bbext/nproc/nproc.c" 	"coreutils/nproc.c"
+#    cp -v "$_bbext/acpi/acpi.c" 	"miscutils/acpi.c"
+#    cp -v "$_bbext/bin2c/bin2c.c" 	"miscutils/bin2c.c"
+#    cp -v "$_bbext/uuidgen/uuidgen.c" 	"miscutils/uuidgen.c"
+#    cp -v "$_bbext/nologin/nologin.c" 	"util-linux/nologin.c"
+#fi
+#patch -p1 -i "$_breqs/busybox-1.22-dmesg-color.patch"
+#patch -p1 -i "$_breqs/busybox-1.22-httpd-no-cache.patch"
+#patch -p1 -i "$_breqs/busybox-1.22-ifplugd-musl-fix.patch"
+#patch -p1 -i "$_breqs/busybox-1.22-fix-od-octal.patch"
+#patch -p1 -i "$_breqs/busybox-1.22-fix-vi-eof.patch"
+#patch -p1 -i "$_breqs/busybox-1.22-fix-vi-newfile.patch"
+#patch -p1 -i "$_breqs/busybox-1.22-fix-syslogd-missing-initializer.patch"
 cp -v "$_breqs/busybox.config" "$_tmp/busybox-src/.config"
-patch -p1 -i "$_breqs/busybox-1.22-dmesg-color.patch"
-patch -p1 -i "$_breqs/busybox-1.22-httpd-no-cache.patch"
-patch -p1 -i "$_breqs/busybox-1.22-ifplugd-musl-fix.patch"
 [ -z "$CONFIG" ] || make gconfig
 cp .config "$_pfx"/busybox.config
 make CC="$_pfx/bin/musl-gcc" && install -Dm755 busybox "$_pfx"/bin/busybox || exit 3
@@ -301,7 +306,7 @@ git_pkg_ver "make" >>"$_pfx/version"
 htop)
 cd "$_tmp/htop-src"
 ./autogen.sh
-./configure --prefix=${_pfx} --sysconfdir=/etc
+./configure --prefix=${_pfx} --sysconfdir=/etc --disable-unicode
 make && strip -s htop && cp htop "$_pfx/bin/"
 git_pkg_ver "htop" >>"$_pfx/version"
 ;; ### htop */
@@ -319,7 +324,6 @@ awk '/PACKAGE_VERSION/ {gsub(/"/,"",$3); print "nano "$3"'$(svnversion)'"}' conf
 
 dropbear) 			## *** 272kb with zlib, 227kb without ***
 cd "$_tmp/dropbear-src"
-patch -p1 -i ${_breqs}/dropbear-65-prevent-warning.patch
 autoreconf -fi
 ./configure --prefix=${_pfx} --sysconfdir=/etc --datarootdir=/usr/share --sbindir=/usr/bin \
 	--disable-{lastlog,utmp,utmpx,wtmp,wtmpx,pututline,pututxline,pam} --disable-zlib
@@ -784,19 +788,13 @@ make && make install-strip
 git_pkg_ver "ethtool" >>"$_pfx/version"
 ;; ### ethtool */
 
-hexedit)
-;; ### hexedit */
-
-mdocml)
-;; ### mdocml */
-
-tcc)
-;; ### tcc */
-
-minised)
-;; ### minised */
-
-bison)
+bison) 				# *** BROKEN ***
+cd "$_tmp/bison-src"
+git submodule update --init
+./bootstrap --skip-po
+./configure --prefix=${_pfx} --disable-{nls,rpath}
+make && make install-strip
+git_pkg_ver "bison" >>"$_pfx/version"
 ;; ### bison */
 
 cryptsetup)
@@ -864,14 +862,38 @@ cp -v nbwmon "$_pfx/bin/"
 git_pkg_ver "nbwmon" >>"$_pfx/version"
 ;; ### nbwmon */
 
+mdocml)
+cd "$_tmp/mdocml-src"
+
+echo "mdocml" >>"$_pfx/version"
+;; ### mdocml */
+
+pixelserv)
+;; ### pixelserv */
+
+cryptsetup)
+;; ### cryptsetup */
+
+minised)
+;; ### minised */
+
 lz4)
 ;; ### lz4 */
 
 dhcpcd)
 ;; ### dhcpcd */
 
-pixelserv)
-;; ### pixelserv */
+kwakd)
+;; ### kwakd */
+
+
+
+hexedit)
+;; ### hexedit */
+
+tcc)
+;; ### tcc */
+
 
 
 
