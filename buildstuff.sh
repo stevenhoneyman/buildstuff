@@ -893,7 +893,7 @@ echo "dhcpcd" >>"$_pfx/version"
 
 kwakd)
 cd "$_tmp/kwakd-src"
-./confifure --prefix=${_pfx} --sysconfdir=/etc
+./configure --prefix=${_pfx} --sysconfdir=/etc
 make && make install-strip
 echo "kwakd $(sed -n 's/^VERSION=\(.*\)$/\1/p' configure)" >>"$_pfx/version"
 ;; ### kwakd */
