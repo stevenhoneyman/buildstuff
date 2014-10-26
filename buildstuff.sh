@@ -887,8 +887,12 @@ git_pkg_ver "lz4" >>"$_pfx/version"
 
 dhcpcd)
 cd "$_tmp/dhcpcd-src"
-
-echo "dhcpcd" >>"$_pfx/version"
+./configure --prefix=${_pfx} --libexecdir=${_pfx}/lib --sbindir=${_pfx}/bin \
+    --sysconfdir=/etc --dbdir=/var/lib/dhcpcd --rundir=/run \
+    --without-udev --disable-debug --disable-ipv6
+find . -type f -exec sed -i '/#[[:blank:]]*include <sys\/\(queue\|cdefs\).h>/d' '{}' \;
+make && make install
+awk '/define VER/ {gsub(/"/,"",$3); print "dhcpcd "$3}' defs.h >>"$_pfx/version"
 ;; ### dhcpcd */
 
 kwakd)
