@@ -1,21 +1,13 @@
-diff --git a/disk-utils/fdisk.c b/disk-utils/fdisk.c
-index c61e263..6323040 100644
---- a/disk-utils/fdisk.c
-+++ b/disk-utils/fdisk.c
-@@ -523,7 +523,7 @@ void list_disk_geometry(struct fdisk_context *cxt)
- 	char *strsz = size_to_human_string(SIZE_SUFFIX_SPACE
+diff --git a/disk-utils/fdisk-list.c b/disk-utils/fdisk-list.c
+index d0d752e..538709a 100644
+--- a/disk-utils/fdisk-list.c
++++ b/disk-utils/fdisk-list.c
+@@ -44,7 +44,7 @@ void list_disk_geometry(struct fdisk_context *cxt)
  					   | SIZE_SUFFIX_3LETTER, bytes);
  
+ 	color_scheme_enable("header", UL_COLOR_BOLD);
 -	fdisk_info(cxt,	_("Disk %s: %s, %ju bytes, %ju sectors"),
-+	fdisk_info(cxt,	_(UL_COLOR_BOLD_YELLOW"Disk %s: %s"UL_COLOR_RESET", %ju bytes, %ju sectors"),
++	fdisk_info(cxt,	_(UL_COLOR_BOLD_YELLOW"Disk %s: %s"UL_COLOR_BOLD_RESET", %ju bytes, %ju sectors"),
  			fdisk_get_devname(cxt), strsz,
  			bytes, (uintmax_t) fdisk_get_nsectors(cxt));
- 	free(strsz);
-@@ -555,6 +555,7 @@ void list_disk_geometry(struct fdisk_context *cxt)
- 
- 	if (fdisk_get_disklabel_id(cxt, &id) == 0 && id)
- 		fdisk_info(cxt, _("Disk identifier: %s"), id);
-+	else fputs("\n",stdout);
- }
- 
- void list_disklabel(struct fdisk_context *cxt)
+ 	color_disable();
